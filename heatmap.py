@@ -309,7 +309,9 @@ def get_readtiming_data(cookie):
     """从微信读书API获取阅读数据"""
     url = "https://i.weread.qq.com/readdata/summary?synckey=0"
     headers = {
-        "Cookie": cookie
+        "Cookie": cookie,
+        "skey":skey,
+        "vid":vid
     }
     response = requests.get(url, headers=headers)
     
