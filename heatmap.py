@@ -305,7 +305,7 @@ class Drawer:
             
             legend_x += 100  # 移动到下一个图例项位置
 
-def get_readtiming_data(cookie, skey, vid):
+def get_readtiming_data(cookie):
     """从微信读书API获取阅读数据"""
     url = "https://i.weread.qq.com/readdata/summary?synckey=0"
     headers = {
