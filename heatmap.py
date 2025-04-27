@@ -309,9 +309,7 @@ def get_readtiming_data(cookie, skey, vid):
     """从微信读书API获取阅读数据"""
     url = "https://i.weread.qq.com/readdata/summary?synckey=0"
     headers = {
-        "Cookie": cookie,
-        "skey":skey,
-        "vid":vid
+        "Cookie": cookie
     }
     response = requests.get(url, headers=headers)
     
@@ -370,8 +368,6 @@ def main():
     """主函数"""
     # 检查环境变量
     cookie = os.getenv("WEREAD_COOKIE") 
-    skey = os.getenv("WEREAD_SKEY")
-    vid = os.getenv("WEREAD_VID")
     if not cookie:
         raise Exception("WEREAD_COOKIE 未设置")
     
@@ -380,7 +376,7 @@ def main():
     
     # 获取阅读数据，如果失败则尝试刷新cookie
     try:
-        data = get_readtiming_data(cookie, skey, vid)
+        data = get_readtiming_data(cookie)
         if data.get("errCode") == 1001:  # 未登录状态
             print("检测到未登录状态，尝试刷新cookies...")
             success, new_cookie = refresh_cookies(cookie)
