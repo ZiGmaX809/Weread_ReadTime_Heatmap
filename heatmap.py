@@ -370,6 +370,8 @@ def main():
     """主函数"""
     # 检查环境变量
     cookie = os.getenv("WEREAD_COOKIE") 
+    skey = os.getenv("WEREAD_SKEY")
+    vid = os.getenv("WEREAD_VID")
     if not cookie:
         raise Exception("WEREAD_COOKIE 未设置")
     
