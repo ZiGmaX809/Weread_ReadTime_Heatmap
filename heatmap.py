@@ -325,7 +325,8 @@ def refresh_cookies(cookie):
     
     url = "https://weread.qq.com/"
     headers = {
-        "Cookie": cookie
+        "Cookie": cookie,
+        "User-Agent":"WeRead/9.2.4 (iPhone; iOS 18.4.1; Scale/3.00)"
     }
     
     try:
