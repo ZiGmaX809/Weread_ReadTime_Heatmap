@@ -305,7 +305,7 @@ class Drawer:
             
             legend_x += 100  # 移动到下一个图例项位置
 
-def get_readtiming_data(cookie):
+def get_readtiming_data(cookie, skey, vid):
     """从微信读书API获取阅读数据"""
     url = "https://i.weread.qq.com/readdata/summary?synckey=0"
     headers = {
@@ -380,7 +380,7 @@ def main():
     
     # 获取阅读数据，如果失败则尝试刷新cookie
     try:
-        data = get_readtiming_data(cookie)
+        data = get_readtiming_data(cookie, skey, vid)
         if data.get("errCode") == 1001:  # 未登录状态
             print("检测到未登录状态，尝试刷新cookies...")
             success, new_cookie = refresh_cookies(cookie)
