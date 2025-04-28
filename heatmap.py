@@ -379,8 +379,7 @@ def main():
     USER_SKEY = os.getenv("USER_SKEY")  # 用户登录凭证
     # 检查环境变量
     if not USER_VID or not USER_SKEY:
-        print("请设置环境变量 VID 和 SKEY")
-        sys.exit(1)
+        raise Exception("USER_VID 或 USER_SKEY 未设置")
 
     # 初始化数据
     data = None
