@@ -328,7 +328,7 @@ def get_readtiming_data(vid, skey):
 def refresh_skey(vid):
     print("尝试刷新skey...")
 
-    requset_body = os.getenv("REQUESR_BODY")
+    requset_body = os.getenv("REQUEST_BODY")
 
     url = "https://i.weread.qq.com/login"
     method = "POST"
