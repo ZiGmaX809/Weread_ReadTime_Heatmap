@@ -3,6 +3,8 @@
 ## 展示
 <img src="https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/main/heatmap.svg">
 
+⚠️ 因微信阅读相关api失效，本项目使用方式需要一定动手能力
+
 ## 说明
 
 之前阅读的热力图使用的是[Weread2NotionPro](https://github.com/malinkang/weread2notion-pro.git)项目进行生成。
@@ -12,15 +14,21 @@
 基于上述原因，用了一天时间研究了一下相关Api和绘制脚本逻辑并使用AI（吹一波Claude的代码能力），重构了热力图生成脚本。
 
 ## 使用
-1. fork本项目。
-2. 获取微信阅读的`cookie`—— 获取方法请查询相关项目的手册，仅需其中的`wr_fp=123456789; wr_vid=12345678; wr_rt=XXXXXXXXXXXXXXXXX; wr_skey=XXXXXXXXXX`，`cookie`过期会尝试自动刷新。
-3. 点击`Settings->Secrets and variables->New repository secret`中添加`SecretS`。
+1. fork本项目；
+2. 在手机上利用Quantumult X等工具针对微信阅读进行抓包；
+3. 找到连接为`https://i.weread.qq.com/login`的请求（可能需要关闭app后重新打开才会有或者需要等到已有skey失效后app才会进行请求）；
+4. 在`Request Header`中获取vid值；
+5. 获取`Request Body`的json格式文本；
+6. 点击`Settings->Secrets and variables->New repository secret`中添加以下内容：
 
 | Secrets键     | 值   | 备注    |
 | ------------ | -- | ----- |
-| WEREAD_COOKIE |  wr_fp=123456789; wr_vid=12345678; wr_rt=XXXXXXXXXXXXXXXXX; wr_skey=XXXXXXXXXX   |     |
+| USER_VID |   365204888  |   9位数字  |
+| USER_SKEY |  Khsui_qw  |   8位随机码  |
+| REQUEST_BODY |  { "random" : xxxxxxxxx,"deviceId" : "xxxxx"...} |  请求体json  |
 
-4. 在`Settings->Secrets and variables`中添加`Variables`，以下按需自行添加、修改键值，如果无所谓默认样式则无须添加。
+## 样式
+1. 在`Settings->Secrets and variables`中添加`Variables`，以下按需自行添加、修改键值，如果无所谓默认样式则无须添加。
 
 | Variables键      | （默认）值        | 备注              |
 | ---------------- | --------- | -----------------------|
@@ -38,9 +46,9 @@
 | TRACK_SPECIAL4_COLOR | #216E39 |  四级颜色              |
 | DEFAULT_DOM_COLOR | #EBEDF0 | 默认格子颜色                  |
 
-5. 项目自动运行后会在根目录下生成`heatmap.svg`文件，直接在Obsidian中进行引用即可。
+2. 项目自动运行后会在根目录下生成`heatmap.svg`文件，直接在Obsidian中进行引用即可。
 
-## 配色参考
+### 配色参考
 
 自行逐个替换`TRACK_SPECIAL1_COLOR`至 `TRACK_SPECIAL4_COLOR`的值
 

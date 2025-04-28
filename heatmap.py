@@ -325,6 +325,8 @@ def refresh_skey(vid):
     print("尝试刷新skey...")
 
     requset_body = os.getenv("REQUEST_BODY")
+    if not requset_body:
+        raise Exception("REQUEST_BODY 环境变量未设置")
 
     url = "https://i.weread.qq.com/login"
     method = "POST"
@@ -377,10 +379,10 @@ def main():
     # 获取环境变量
     # 微信用户信息配置
     vid = os.getenv("USER_VID")  # 用户唯一标识
-    skey = os.getenv("USER_SKEY")  # 用户登录凭证
+    skey = os.getenv("USER_SKEY","Khsui_qw")  # 用户登录凭证
     # 检查环境变量
-    if not vid or not skey:
-        raise Exception("USER_VID 或 USER_SKEY 未设置")
+    if not vid:
+        raise Exception("USER_VID 未设置")
 
     # 初始化数据
     data = None
