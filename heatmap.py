@@ -340,6 +340,8 @@ def refresh_skey(vid):
         'Accept-Language': 'zh-Hans-CN;q=1, en-CN;q=0.9, tr-CN;q=0.8'
     }
 
+    print(requset_body)
+
     try:
         response = requests.request(
             method=method,
@@ -350,6 +352,7 @@ def refresh_skey(vid):
             # data=urllib.parse.urlencode(body)
         )
         new_skey = response.json().get('skey')
+        
         print(f"Status Code: {response.status_code}")
         print("Response Body:")
         print(response.text)
