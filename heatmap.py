@@ -375,10 +375,10 @@ def main():
     """主函数"""
     # 获取环境变量
     # 微信用户信息配置
-    USER_VID = os.getenv("USER_VID")  # 用户唯一标识
-    USER_SKEY = os.getenv("USER_SKEY")  # 用户登录凭证
+    vid = os.getenv("USER_VID")  # 用户唯一标识
+    skey = os.getenv("USER_SKEY")  # 用户登录凭证
     # 检查环境变量
-    if not USER_VID or not USER_SKEY:
+    if not vid or not skey:
         raise Exception("USER_VID 或 USER_SKEY 未设置")
 
     # 初始化数据
@@ -386,13 +386,13 @@ def main():
     
     # 获取阅读数据，如果失败则尝试刷新skey
     try:
-        data = get_readtiming_data(USER_VID, USER_SKEY)
+        data = get_readtiming_data(vid, skey)
         if data.get("errCode") == 1001:  # 未登录状态
             print("检测到未登录状态，尝试刷新skeys...")
-            success, new_skey = refresh_skey(USER_VID)
+            success, new_skey = refresh_skey(vid)
             if success:
                 print("skeys刷新成功，重新获取数据...")
-                data = get_readtiming_data(USER_VID, new_skey)
+                data = get_readtiming_data(vid, new_skey)
                 if data.get("errCode") == 1001:
                     print("自动刷新skeys后仍然未登录")
             else:
