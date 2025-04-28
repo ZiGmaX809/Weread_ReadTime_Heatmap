@@ -352,8 +352,6 @@ def refresh_skey(vid):
         new_skey = response.json().get('skey')
         
         print(f"Status Code: {response.status_code}")
-        print("Response Body:")
-        print(response.text)
         return True, new_skey
     
     except Exception as e:
