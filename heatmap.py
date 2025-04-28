@@ -30,10 +30,6 @@ MONTH_NAMES = [
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ]
 
-# 微信用户信息配置
-USER_VID = os.getenv("USER_VID")  # 用户唯一标识
-USER_SKEY = os.getenv("USER_SKEY")  # 用户登录凭证
-
 # 阅读时间阈值（秒）
 READING_THRESHOLDS = {
     "light": 1800,    # 30分钟
@@ -377,6 +373,10 @@ def calculate_svg_dimensions(poster):
 
 def main():
     """主函数"""
+    # 获取环境变量
+    # 微信用户信息配置
+    USER_VID = os.getenv("USER_VID")  # 用户唯一标识
+    USER_SKEY = os.getenv("USER_SKEY")  # 用户登录凭证
     # 检查环境变量
     if not USER_VID or not USER_SKEY:
         print("请设置环境变量 VID 和 SKEY")
