@@ -24,7 +24,7 @@
 | Secrets键     | 值   | 备注    |
 | ------------ | -- | ----- |
 | USER_VID |   365204888  |   9位数字  |
-| USER_SKEY |  Khsui_qw  |   8位随机码  |
+| USER_SKEY |  Khsui_qw  |   8位随机码，skey和request_body二选一，但skey仅单次有用，body数据可进行skey自动刷新  |
 | REQUEST_BODY |  { "random" : xxxxxxxxx,"deviceId" : "xxxxx"...} |  请求体json  |
 
 ## 样式
