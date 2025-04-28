@@ -353,7 +353,7 @@ def refresh_skey(vid):
             # 如果要用表单格式，应该改为：
             # data=urllib.parse.urlencode(body)
         )
-        new_skey = response.get('skey')
+        new_skey = response.json().get('skey')
         print(f"Status Code: {response.status_code}")
         return True, new_skey
     
