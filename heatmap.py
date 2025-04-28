@@ -340,8 +340,6 @@ def refresh_skey(vid):
         'Accept-Language': 'zh-Hans-CN;q=1, en-CN;q=0.9, tr-CN;q=0.8'
     }
 
-    print(requset_body)
-
     try:
         response = requests.request(
             method=method,
