@@ -345,7 +345,7 @@ def refresh_skey(vid):
             method=method,
             url=url,
             headers=headers,
-            data=json.dumps(requset_body)  # 保持JSON格式发送
+            data=json.loads(requset_body)  # 保持JSON格式发送
             # 如果要用表单格式，应该改为：
             # data=urllib.parse.urlencode(body)
         )
