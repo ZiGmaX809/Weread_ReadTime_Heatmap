@@ -31,8 +31,8 @@ MONTH_NAMES = [
 ]
 
 # 微信用户信息配置
-USER_VID = os.getenv("VID")  # 用户唯一标识
-USER_SKEY = os.getenv("SKEY")  # 用户登录凭证
+USER_VID = os.getenv("USER_VID")  # 用户唯一标识
+USER_SKEY = os.getenv("USER_SKEY")  # 用户登录凭证
 
 # 阅读时间阈值（秒）
 READING_THRESHOLDS = {
@@ -328,7 +328,7 @@ def get_readtiming_data(vid, skey):
 def refresh_skey(vid):
     print("尝试刷新skey...")
 
-    requset_body = os.getenv("BODY")
+    requset_body = os.getenv("REQUESR_BODY")
 
     url = "https://i.weread.qq.com/login"
     method = "POST"
