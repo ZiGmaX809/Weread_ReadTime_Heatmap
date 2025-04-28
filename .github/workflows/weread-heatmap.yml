@@ -20,7 +20,9 @@ jobs:
           pip install requests svgwrite
       - name: Generate heatmap
         env:
-          WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
+          USER_VID: ${{ secrets.USER_VID }}
+          USER_SKEY: ${{ secrets.USER_SKEY }}
+          REQUEST_BODY: ${{ secrets.REQUEST_BODY }}
           START_YEAR: ${{ vars.START_YEAR }}
           END_YEAR: ${{ vars.END_YEAR }}
           NAME: ${{ vars.NAME }}
