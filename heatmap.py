@@ -30,6 +30,10 @@ MONTH_NAMES = [
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ]
 
+# 微信用户信息配置
+USER_VID = os.getenv("VID")  # 用户唯一标识
+USER_SKEY = os.getenv("SKEY")  # 用户登录凭证
+
 # 阅读时间阈值（秒）
 READING_THRESHOLDS = {
     "light": 1800,    # 30分钟
@@ -305,11 +309,12 @@ class Drawer:
             
             legend_x += 100  # 移动到下一个图例项位置
 
-def get_readtiming_data(cookie):
+def get_readtiming_data(vid, skey):
     """从微信读书API获取阅读数据"""
     url = "https://i.weread.qq.com/readdata/summary?synckey=0"
     headers = {
-        "Cookie": cookie
+        "vid": vid,
+        "skey": skey,
     }
     response = requests.get(url, headers=headers)
     
@@ -320,35 +325,40 @@ def get_readtiming_data(cookie):
     else:
         raise Exception(f"获取数据失败: {response.status_code}")
 
-def refresh_cookies(cookie):
-    print("尝试刷新cookies...")
-    
-    url = "https://weread.qq.com/"
-    headers = {
-        "Cookie": cookie,
-        "User-Agent":"WeRead/9.2.4 (iPhone; iOS 18.4.1; Scale/3.00)"
-    }
-    
-    try:
-        response = requests.get(url, headers=headers)
-        new_cookies = response.cookies.get_dict()
+def refresh_skey(vid):
+    print("尝试刷新skey...")
 
-        # 更新cookie
-        cookie_parts = cookie.split(';')
-        updated_cookie = []
-        for part in cookie_parts:
-            key = part.split('=')[0].strip()
-            if key not in new_cookies:
-                updated_cookie.append(part)
-        
-        for key, value in new_cookies.items():
-            updated_cookie.append(f"{key}={value}")
-        
-        updated_cookie_str = '; '.join(updated_cookie)
-        print("已生成新的cookie")
-        return True, updated_cookie_str
+    requset_body = os.getenv("BODY")
+
+    url = "https://i.weread.qq.com/login"
+    method = "POST"
+    headers = {
+        'Accept': '*/*',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'vid': vid,
+        'Host': 'i.weread.qq.com',
+        'User-Agent': 'WeRead/9.2.4 (iPhone; iOS 18.4.1; Scale/3.00)',
+        'v': '9.2.4.33',
+        'Accept-Language': 'zh-Hans-CN;q=1, en-CN;q=0.9, tr-CN;q=0.8'
+    }
+
+    try:
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=headers,
+            data=json.dumps(requset_body)  # 保持JSON格式发送
+            # 如果要用表单格式，应该改为：
+            # data=urllib.parse.urlencode(body)
+        )
+        new_skey = response.get('skey')
+        print(f"Status Code: {response.status_code}")
+        return True, new_skey
+    
     except Exception as e:
-        print(f"刷新cookies时出错: {e}")
+        print(f"Error: {str(e)}")
         return False, None
 
 def calculate_svg_dimensions(poster):
@@ -368,34 +378,33 @@ def calculate_svg_dimensions(poster):
 def main():
     """主函数"""
     # 检查环境变量
-    cookie = os.getenv("WEREAD_COOKIE") 
-    if not cookie:
-        raise Exception("WEREAD_COOKIE 未设置")
-    
+    if not USER_VID or not USER_SKEY:
+        print("请设置环境变量 VID 和 SKEY")
+        sys.exit(1)
+
     # 初始化数据
     data = None
     
-    # 获取阅读数据，如果失败则尝试刷新cookie
+    # 获取阅读数据，如果失败则尝试刷新skey
     try:
-        data = get_readtiming_data(cookie)
+        data = get_readtiming_data(USER_VID, USER_SKEY)
         if data.get("errCode") == 1001:  # 未登录状态
-            print("检测到未登录状态，尝试刷新cookies...")
-            success, new_cookie = refresh_cookies(cookie)
+            print("检测到未登录状态，尝试刷新skeys...")
+            success, new_skey = refresh_skey(USER_VID)
             if success:
-                print("cookies刷新成功，重新获取数据...")
-                cookie = new_cookie
-                data = get_readtiming_data(cookie)
+                print("skeys刷新成功，重新获取数据...")
+                data = get_readtiming_data(USER_VID, new_skey)
                 if data.get("errCode") == 1001:
-                    print("自动刷新cookies后仍然未登录")
+                    print("自动刷新skeys后仍然未登录")
             else:
-                print("cookies刷新失败，请手动更新cookies")
+                print("skeys刷新失败，请手动更新skeys")
     except Exception as e:
         print(f"获取阅读数据时出错: {e}")
         return
 
     # 如果无法获取数据，则退出
     if data is None or not data.get('readTimes'):
-        print("无法获取阅读数据，请检查网络连接或cookie是否有效")
+        print("无法获取阅读数据，请检查网络连接或skey是否有效")
         sys.exit(1)  # 使用非零退出码退出脚本
         return
     
