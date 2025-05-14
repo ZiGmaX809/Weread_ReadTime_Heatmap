@@ -4,6 +4,7 @@
 <img src="https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/main/heatmap.svg">
 
 ⚠️ ~~因微信阅读相关api失效，本项目使用方式需要一定动手能力~~
+
 ⚠️ 新增Quantumult X脚本，实现全流程自动化同步刷新热力图，妈妈再也不用担心我不会抓包了
 
 ## 说明
@@ -14,7 +15,7 @@
 
 基于上述原因，用了一天时间研究了一下相关Api和绘制脚本逻辑并使用AI（吹一波Claude的代码能力），重构了热力图生成脚本。
 
-## 新方法
+## 新方法(相对比较繁琐，但是设置完一劳永逸)
 1. 手机Quantumult X中添加重写脚本
 ```shell
 https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/Scripts/Get_WeRead_Infos/weread_login_monitor.conf
