@@ -25,9 +25,9 @@ jobs:
           # 使用 secrets.GIST_URL 获取JSON文件内容
           WEREAD_JSON=$(curl -s "${{ secrets.GIST_URL }}")
           
-          # 检查是否成功获取内容
-          if [ -z "$WEREAD_JSON" ]; then
-            echo "Failed to fetch Weread login info"
+          # 验证JSON格式
+          if ! echo $WEREAD_JSON | jq -e . >/dev/null 2>&1; then
+            echo "Error: Invalid JSON response"
             exit 1
           fi
           
@@ -59,7 +59,7 @@ jobs:
           echo "USER_VID is set: ${{ env.USER_VID != '' }}"
           echo "REQUEST_BODY is set: ${{ env.REQUEST_BODY != '' }}"
           echo "REQUEST_HEADERS is set: ${{ env.REQUEST_HEADERS != '' }}"
-          
+
       - name: Generate heatmap
         env:
           USER_VID: ${{ env.USER_VID }}
