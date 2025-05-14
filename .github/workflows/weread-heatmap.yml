@@ -27,7 +27,7 @@ jobs:
           GIST_CONTENT=$(curl -s "$GIST_URL")
           
           # 将内容设置为环境变量
-          echo "GIST_CONTENT=${GIST_CONTENT}" >> $GITHUB_ENV
+          echo "GIST_CONTENT=${toJson(GIST_CONTENT)}" >> $GITHUB_ENV
       - name: Generate heatmap
         env:
           START_YEAR: ${{ vars.START_YEAR }}
