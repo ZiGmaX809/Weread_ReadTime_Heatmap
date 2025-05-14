@@ -337,10 +337,8 @@ def refresh_skey():
         response = requests.request(
             method=method,
             url=url,
-            headers=json.loads(headers),
-            data=json.loads(request_body)  # 保持JSON格式发送
-            # 如果要用表单格式，应该改为：
-            # data=urllib.parse.urlencode(body)
+            headers=headers,
+            data=request_body
         )
         new_skey = response.json().get('skey')
         
