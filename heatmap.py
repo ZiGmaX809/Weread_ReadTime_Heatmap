@@ -326,18 +326,19 @@ def refresh_skey():
 
     request_body_str = os.getenv("REQUEST_BODY")
     headers_str = os.getenv("REQUEST_HEADERS")
-
+ 
+    # 确保环境变量存在
+    if not request_body_str or not headers_str:
+        print("错误: 环境变量 REQUEST_BODY 或 REQUEST_HEADERS 未设置")
+        return False, None
+    
+    # 正确处理headers参数
     # 1. 去掉最外层引号
     inner_json_str = headers_str[1:-1]  # 直接截取首尾字符
     # 2. 替换转义符
     fixed_str = inner_json_str.replace('\\"', '"')
     # 3. 解析为字典
     headers_dict = json.loads(fixed_str)
-    
-    # 确保环境变量存在
-    if not request_body_str or not headers_str:
-        print("错误: 环境变量 REQUEST_BODY 或 REQUEST_HEADERS 未设置")
-        return False, None
     
     try:
         response = requests.request(
