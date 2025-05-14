@@ -330,7 +330,7 @@ def refresh_skey():
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
         'Content-Type': 'application/x-www-form-urlencoded',
-        'vid': 365204818,
+        'vid': '365204818',
         'Host': 'i.weread.qq.com',
         'User-Agent': 'WeRead/9.2.4 (iPhone; iOS 18.4.1; Scale/3.00)',
         'v': '9.2.4.33',
