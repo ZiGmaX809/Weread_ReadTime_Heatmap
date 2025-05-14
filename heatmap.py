@@ -329,7 +329,7 @@ def refresh_skey():
  
     # 确保环境变量存在
     if not request_body_str or not headers_str:
-        print("错误: 环境变量 REQUEST_BODY 或 REQUEST_HEADERS 未设置")
+        print("错误: 环境变量GIST_URL相关未设置")
         return False, None
     
     # 正确处理headers参数
@@ -339,7 +339,7 @@ def refresh_skey():
     fixed_str = inner_json_str.replace('\\"', '"')
     # 3. 解析为字典
     headers_dict = json.loads(fixed_str)
-    
+
     try:
         response = requests.request(
             method="POST",
