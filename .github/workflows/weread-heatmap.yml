@@ -30,9 +30,6 @@ jobs:
           echo "GIST_CONTENT=${GIST_CONTENT}" >> $GITHUB_ENV
       - name: Generate heatmap
         env:
-          USER_VID: ${{ toJson(env.GIST_CONTENT).vid }}
-          USER_SKEY: ${{ secrets.USER_SKEY }}
-          REQUEST_BODY: ${{ toJson(env.GIST_CONTENT).requestBody }}
           START_YEAR: ${{ vars.START_YEAR }}
           END_YEAR: ${{ vars.END_YEAR }}
           NAME: ${{ vars.NAME }}

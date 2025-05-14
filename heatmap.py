@@ -8,6 +8,7 @@ from svgwrite import Drawing
 from svgwrite.animate import Animate
 
 # 常量配置
+USER_CONTENT = os.getenv("USER_CONTENT")  # 用户信息
 TRACK_COLOR = os.getenv("TRACK_COLOR", "#EBEDF0")  # 默认颜色（无阅读时间）
 TRACK_SPECIAL1_COLOR = os.getenv("TRACK_SPECIAL1_COLOR", "#9BE9A8")  # 轻度阅读（0-30分钟）
 TRACK_SPECIAL2_COLOR = os.getenv("TRACK_SPECIAL2_COLOR", "#40C463")  # 中度阅读（30分钟-1小时）
@@ -321,33 +322,24 @@ def get_readtiming_data(vid, skey):
     else:
         raise Exception(f"获取数据失败: {response.status_code}")
 
-def refresh_skey(vid):
+def refresh_skey():
     print("尝试刷新skey...")
 
-    requset_body = os.getenv("REQUEST_BODY")
-    if not requset_body:
+    request_body = json.loads(USER_CONTENT).get("requestBody")  # 获取请求体
+
+    if not request_body:
         raise Exception("REQUEST_BODY 环境变量未设置")
 
     url = "https://i.weread.qq.com/login"
     method = "POST"
-    headers = {
-        'Accept': '*/*',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'vid': vid,
-        'Host': 'i.weread.qq.com',
-        'User-Agent': 'WeRead/9.2.4 (iPhone; iOS 18.4.1; Scale/3.00)',
-        'v': '9.2.4.33',
-        'Accept-Language': 'zh-Hans-CN;q=1, en-CN;q=0.9, tr-CN;q=0.8'
-    }
+    headers = json.loads(USER_CONTENT).get("request_headers")
 
     try:
         response = requests.request(
             method=method,
             url=url,
             headers=headers,
-            data=json.loads(requset_body)  # 保持JSON格式发送
+            data=json.loads(request_body)  # 保持JSON格式发送
             # 如果要用表单格式，应该改为：
             # data=urllib.parse.urlencode(body)
         )
@@ -378,28 +370,21 @@ def main():
     """主函数"""
     # 获取环境变量
     # 微信用户信息配置
-    vid = os.getenv("USER_VID")  # 用户唯一标识
-    skey = os.getenv("USER_SKEY","Khsui_qw")  # 用户登录凭证
-    # 检查环境变量
-    if not vid:
-        raise Exception("USER_VID 未设置")
+    vid = json.loads(USER_CONTENT).get("vid")  # 用户唯一标识
 
     # 初始化数据
     data = None
     
     # 获取阅读数据，如果失败则尝试刷新skey
-    try:
-        data = get_readtiming_data(vid, skey)
-        if data.get("errCode") == 1001:  # 未登录状态
-            print("检测到未登录状态，尝试刷新skeys...")
-            success, new_skey = refresh_skey(vid)
-            if success:
-                print("skeys刷新成功，重新获取数据...")
-                data = get_readtiming_data(vid, new_skey)
-                if data.get("errCode") == 1001:
-                    print("自动刷新skeys后仍然未登录")
-            else:
-                print("skeys刷新失败，请手动更新skeys")
+    try: 
+        success, new_skey = refresh_skey()
+        if success:
+            print("skeys刷新成功，正在获取数据...")
+            data = get_readtiming_data(vid, new_skey)
+            if data.get("errCode") == 1001:
+                print("自动刷新skeys后仍然未授权")
+        else:
+            print("skeys刷新失败，请检查Gist配置")
     except Exception as e:
         print(f"获取阅读数据时出错: {e}")
         return
