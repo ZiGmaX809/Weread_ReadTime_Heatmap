@@ -387,7 +387,7 @@ def main():
 
     # 如果无法获取数据，则退出
     if data is None or not data.get('readTimes'):
-        print("无法获取阅读数据，请检查网络连接或skey是否有效")
+        print("无法获取阅读数据，请检查网络连接或Gist引用地址是否有效")
         sys.exit(1)  # 使用非零退出码退出脚本
         return
     
