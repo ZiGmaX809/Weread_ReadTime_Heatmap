@@ -332,17 +332,12 @@ def refresh_skey():
         print("错误: 环境变量 REQUEST_BODY 或 REQUEST_HEADERS 未设置")
         return False, None
     
-    url = "https://i.weread.qq.com/login"
-    method = "POST"
-    request_body = json.loads(request_body_str)
-    headers = json.loads(headers_str)
-    
     try:
         response = requests.request(
-            method=method,
-            url=url,
-            headers=headers,
-            data=request_body
+            method="POST",
+            url="https://i.weread.qq.com/login",
+            headers=json.loads(headers_str),
+            data=json.loads(request_body_str)
         )
         new_skey = response.json().get('skey')
         
