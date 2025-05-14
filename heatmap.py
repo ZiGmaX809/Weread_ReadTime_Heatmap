@@ -327,7 +327,7 @@ def refresh_skey():
     request_body_str = os.getenv("REQUEST_BODY")
     headers_str = os.getenv("REQUEST_HEADERS")
 
-    print(f"headers_str: {headers_str}")
+    print(repr(headers_str))
     print(type(headers_str))
     
     # 确保环境变量存在
