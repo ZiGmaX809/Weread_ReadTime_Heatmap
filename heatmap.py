@@ -326,8 +326,6 @@ def refresh_skey():
 
     request_body_str = os.getenv("REQUEST_BODY")
     headers_str = os.getenv("REQUEST_HEADERS")
-
-    print(f"headers_str: {headers_str}")
     
     # 确保环境变量存在
     if not request_body_str or not headers_str:
@@ -338,7 +336,7 @@ def refresh_skey():
         response = requests.request(
             method="POST",
             url="https://i.weread.qq.com/login",
-            headers=json.loads(headers_str),
+            headers=json.dumps(json.loads(headers_str)),
             data=json.loads(request_body_str)
         )
         new_skey = response.json().get('skey')
