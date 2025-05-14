@@ -34,13 +34,32 @@ jobs:
           # 安装jq以解析JSON（如果需要）
           sudo apt-get update && sudo apt-get install -y jq
           
-          # 解析JSON并设置为环境变量
-          echo "USER_VID=$(echo $WEREAD_JSON | jq -r '.vid')" >> $GITHUB_ENV
-          echo "REQUEST_BODY=$(echo $WEREAD_JSON | jq -r '.requestBody')" >> $GITHUB_ENV
-          echo "REQUEST_HEADERS=$(echo $WEREAD_JSON | jq -r '.headers')" >> $GITHUB_ENV
+          # 提取指定字段并设置为环境变量
+          echo "USER_VID=$(echo $WEREAD_JSON | jq -r '.vid // ""')" >> $GITHUB_ENV
+          
+          # 提取requestBody并设置为环境变量
+          # 如果requestBody是对象/数组，将它转换为字符串
+          REQUEST_BODY=$(echo $WEREAD_JSON | jq -r '.requestBody | if type=="object" or type=="array" then tojson else . end // ""')
+          echo "REQUEST_BODY=$REQUEST_BODY" >> $GITHUB_ENV
+          
+          # 提取headers并设置为环境变量
+          # 如果headers是对象/数组，将它转换为字符串
+          REQUEST_HEADERS=$(echo $WEREAD_JSON | jq -r '.headers | if type=="object" or type=="array" then tojson else . end // ""')
+          echo "REQUEST_HEADERS=$REQUEST_HEADERS" >> $GITHUB_ENV
+          
+          # 添加掩码防止敏感信息泄露
+          echo "::add-mask::$REQUEST_BODY"
+          echo "::add-mask::$REQUEST_HEADERS"
           
           echo "Successfully parsed Weread login info"
-
+      
+      - name: Verify extracted variables
+        run: |
+          # 验证环境变量是否成功设置（不显示实际内容）
+          echo "USER_VID is set: ${{ env.USER_VID != '' }}"
+          echo "REQUEST_BODY is set: ${{ env.REQUEST_BODY != '' }}"
+          echo "REQUEST_HEADERS is set: ${{ env.REQUEST_HEADERS != '' }}"
+          
       - name: Generate heatmap
         env:
           USER_VID: ${{ env.USER_VID }}
