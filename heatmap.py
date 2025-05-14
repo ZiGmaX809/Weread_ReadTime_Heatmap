@@ -324,14 +324,18 @@ def get_readtiming_data(vid, skey):
 def refresh_skey():
     print("尝试刷新skey...")
 
-    request_body = os.getenv("REQUEST_BODY")  # 获取请求体
-    headers = os.getenv("REQUEST_HEADERS")  # 获取请求头
-
-    if not request_body:
-        raise Exception("Gist变量未设置")
-
+    request_body_str = os.getenv("REQUEST_BODY")
+    headers_str = os.getenv("REQUEST_HEADERS")
+    
+    # 确保环境变量存在
+    if not request_body_str or not headers_str:
+        print("错误: 环境变量 REQUEST_BODY 或 REQUEST_HEADERS 未设置")
+        return False, None
+    
     url = "https://i.weread.qq.com/login"
     method = "POST"
+    request_body = json.loads(request_body_str)
+    headers = json.loads(headers_str)
     
     try:
         response = requests.request(
