@@ -4,7 +4,7 @@
 <img src="https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/main/heatmap.svg">
 
 ⚠️ ~~因微信阅读相关api失效，本项目使用方式需要一定动手能力~~
-⚠️ 新增Quantumult X脚本，全流程自动化同步刷新热力图
+⚠️ 新增Quantumult X脚本，实现全流程自动化同步刷新热力图，妈妈再也不用担心我不会抓包了
 
 ## 说明
 
@@ -21,17 +21,20 @@ https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/Quant
 ```
 2. 在Github -> Settings -> Developer Settings 
  -> Persional access tokens -> Tokens(classic)中新建一个token，其中`Select scopes`仅需选择`gist`。
-3. 在`BoxJS`中添加订阅，并打开其中的`微信读书登录信息监控`，填入上面申请的`GitHub Token`后保存。
+3. 在`BoxJS`中添加以下订阅，并打开其中的`微信读书登录信息监控`，填入上面申请的`GitHub Token`后保存。
 ```shell
 https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/boxjs.json
 ```
-4. 使用微信阅读，脚本会在微信阅读App请求`https://i.weread.qq.com/login`时自动获取`vid`、`request_body`、`request_headers`等信息，并将其同步至你的`Github Gists`。
+4. 使用微信阅读，使用过程中，脚本会在微信阅读App请求`https://i.weread.qq.com/login`时自动获取`vid`、`request_body`、`request_headers`等信息，并将其同步至你的`Github Gists`。（因为该地址并非实时请求，而是存在一个生命周期）
 5. 打开`https://gist.github.com/你的GithubID`网址就能看到推送上来的`weread_login_info.json`文件，获取其Raw地址。
 5. fork本项目，并在项目`Settings->Secrets and variables->New repository secret`中添加上面的Gist文件的Raw地址。
 
 | Secrets键     | 示例值   | 备注    |
 | ------------ | -- | ----- |
 | GIST_URL |   https://gist.githubusercontent.com/ZiGmaX809/akjsjha....sefsfe/raw/773...121/weread_login_info.json  |  Gist文件的Raw地址   |
+
+## 获取登录信息通知
+<img src=./assets/Login_Info_Push.png width=50% />
 
 ## 旧方法
 1. fork本项目；
