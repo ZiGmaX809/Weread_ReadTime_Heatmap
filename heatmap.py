@@ -342,6 +342,7 @@ def refresh_skey():
         new_skey = response.json().get('skey')
         
         print(f"Status Code: {response.status_code}")
+        print(f"Response Text: {response.text[:200]}...")
         return True, new_skey
     
     except Exception as e:
