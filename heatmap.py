@@ -333,12 +333,11 @@ def refresh_skey():
     url = "https://i.weread.qq.com/login"
     method = "POST"
     
-
     try:
         response = requests.request(
             method=method,
             url=url,
-            headers=headers,
+            headers=json.loads(headers),
             data=json.loads(request_body)  # 保持JSON格式发送
             # 如果要用表单格式，应该改为：
             # data=urllib.parse.urlencode(body)
