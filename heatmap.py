@@ -327,8 +327,12 @@ def refresh_skey():
     request_body_str = os.getenv("REQUEST_BODY")
     headers_str = os.getenv("REQUEST_HEADERS")
 
-    print(repr(headers_str))
-    print(type(headers_str))
+    # 1. 去掉最外层引号
+    inner_json_str = headers_str[1:-1]  # 直接截取首尾字符
+    # 2. 替换转义符
+    fixed_str = inner_json_str.replace('\\"', '"')
+    # 3. 解析为字典
+    headers_dict = json.loads(fixed_str)
     
     # 确保环境变量存在
     if not request_body_str or not headers_str:
@@ -339,7 +343,7 @@ def refresh_skey():
         response = requests.request(
             method="POST",
             url="https://i.weread.qq.com/login",
-            headers=headers_str,
+            headers=headers_dict,
             data=json.loads(request_body_str)
         )
         new_skey = response.json().get('skey')
