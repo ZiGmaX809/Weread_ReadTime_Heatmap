@@ -20,25 +20,26 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests svgwrite
-      - name: Get Gist content
-        id: gist
-        env:
-          GIST_URL: ${{ secrets.GIST_URL }}  # 从 GitHub Secrets 中获取 Gist ID
+      - name: Fetch and parse Weread login info
         run: |
-          # 获取JSON文件内容
-          JSON_DATA=$(curl -s "$GIST_URL")
-
-           # 检查是否成功获取版本号
-          if [ -z "$JSON_DATA" ] || [ "$JSON_DATA" = "null" ]; then
-            echo "Failed to get valid gist content."
+          # 使用 secrets.GIST_URL 获取JSON文件内容
+          WEREAD_JSON=$(curl -s "${{ secrets.GIST_URL }}")
+          
+          # 检查是否成功获取内容
+          if [ -z "$WEREAD_JSON" ]; then
+            echo "Failed to fetch Weread login info"
             exit 1
           fi
           
-          # 使用jq解析并导出变量
-          echo "USER_VID=$(echo $JSON_DATA | jq -r '.vid')" >> $GITHUB_ENV
-          echo "REQUEST_BODY=$(echo $JSON_DATA | jq -r '.requestBody')" >> $GITHUB_ENV
-          echo "REQUEST_HEADERS=$(echo $JSON_DATA | jq -r '.headers')" >> $GITHUB_ENV
-
+          # 安装jq以解析JSON（如果需要）
+          sudo apt-get update && sudo apt-get install -y jq
+          
+          # 解析JSON并设置为环境变量
+          echo "USER_VID=$(echo $WEREAD_JSON | jq -r '.vid')" >> $GITHUB_ENV
+          echo "REQUEST_BODY=$(echo $WEREAD_JSON | jq -r '.requestBody')" >> $GITHUB_ENV
+          echo "REQUEST_HEADERS=$(echo $WEREAD_JSON | jq -r '.headers')" >> $GITHUB_ENV
+          
+          echo "Successfully parsed Weread login info"
 
       - name: Generate heatmap
         env:
