@@ -63,8 +63,8 @@ jobs:
       - name: Generate heatmap
         env:
           USER_VID: ${{ env.USER_VID }}
-          REQUEST_BODY: ${{ env.REQUEST_BODY != '' }}
-          REQUEST_HEADERS: ${{ env.REQUEST_HEADERS != '' }}
+          REQUEST_BODY: ${{ env.REQUEST_BODY }}
+          REQUEST_HEADERS: ${{ env.REQUEST_HEADERS }}
           START_YEAR: ${{ vars.START_YEAR }}
           END_YEAR: ${{ vars.END_YEAR }}
           NAME: ${{ vars.NAME }}
