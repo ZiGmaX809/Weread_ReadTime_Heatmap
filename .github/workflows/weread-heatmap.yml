@@ -49,7 +49,7 @@ jobs:
           
           # 添加掩码防止敏感信息泄露
           echo "::add-mask::$REQUEST_BODY"
-          echo "::add-mask::$REQUEST_HEADERS"
+          # echo "::add-mask::$REQUEST_HEADERS"
           
           echo "Successfully parsed Weread login info"
       
