@@ -3,7 +3,8 @@
 ## 展示
 <img src="https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/main/heatmap.svg">
 
-⚠️ 因微信阅读相关api失效，本项目使用方式需要一定动手能力
+⚠️ ~~因微信阅读相关api失效，本项目使用方式需要一定动手能力~~
+⚠️ 新增Quantumult X脚本，全流程自动化同步刷新热力图
 
 ## 说明
 
@@ -13,7 +14,26 @@
 
 基于上述原因，用了一天时间研究了一下相关Api和绘制脚本逻辑并使用AI（吹一波Claude的代码能力），重构了热力图生成脚本。
 
-## 使用
+## 新方法
+1. 手机Quantumult X中添加重写脚本
+```shell
+https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/Scripts/Get_WeRead_Infos/weread_login_monitor.conf
+```
+2. 在Github -> Settings -> Developer Settings 
+ -> Persional access tokens -> Tokens(classic)中新建一个token，其中`Select scopes`仅需选择`gist`。
+3. 在`BoxJS`中添加订阅，并打开其中的`微信读书登录信息监控`，填入上面申请的`GitHub Token`后保存。
+```shell
+https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/boxjs.json
+```
+4. 使用微信阅读，脚本会在微信阅读App请求`https://i.weread.qq.com/login`时自动获取`vid`、`request_body`、`request_headers`等信息，并将其同步至你的`Github Gists`。
+5. 打开`https://gist.github.com/你的GithubID`网址就能看到推送上来的`weread_login_info.json`文件，获取其Raw地址。
+5. fork本项目，并在项目`Settings->Secrets and variables->New repository secret`中添加上面的Gist文件的Raw地址。
+
+| Secrets键     | 示例值   | 备注    |
+| ------------ | -- | ----- |
+| GIST_URL |   https://gist.githubusercontent.com/ZiGmaX809/akjsjha....sefsfe/raw/773...121/weread_login_info.json  |  Gist文件的Raw地址   |
+
+## 旧方法
 1. fork本项目；
 2. 在手机上利用Quantumult X等工具针对微信阅读进行抓包；
 3. 找到连接为`https://i.weread.qq.com/login`的请求（可能需要关闭app后重新打开才会有或者需要等到已有skey失效后app才会进行请求）；
@@ -24,7 +44,7 @@
 | Secrets键     | 值   | 备注    |
 | ------------ | -- | ----- |
 | USER_VID |   365204888  |   9位数字  |
-| USER_SKEY |  Khsui_qw  |   8位随机码，skey和request_body二选一，但skey仅单次有用，body数据可进行skey自动刷新  |
+| USER_SKEY |  YourSkey  |   8位随机码，skey和request_body二选一，但skey仅单次有用，body数据可进行skey自动刷新  |
 | REQUEST_BODY |  { "random" : xxxxxxxxx,"deviceId" : "xxxxx"...} |  请求体json  |
 
 ## 样式
