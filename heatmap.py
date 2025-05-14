@@ -325,17 +325,7 @@ def refresh_skey():
     print("尝试刷新skey...")
 
     request_body_str = os.getenv("REQUEST_BODY")
-    headers_str = {
-        'Accept': '*/*',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'vid': '365204818',
-        'Host': 'i.weread.qq.com',
-        'User-Agent': 'WeRead/9.2.4 (iPhone; iOS 18.4.1; Scale/3.00)',
-        'v': '9.2.4.33',
-        'Accept-Language': 'zh-Hans-CN;q=1, en-CN;q=0.9, tr-CN;q=0.8'
-    }
+    headers_str = os.getenv("REQUEST_HEADERS")
     
     # 确保环境变量存在
     if not request_body_str or not headers_str:
