@@ -346,7 +346,7 @@ def refresh_skey():
         response = requests.request(
             method="POST",
             url="https://i.weread.qq.com/login",
-            headers=json.loads(headers_str),
+            headers=headers_str,
             data=json.loads(request_body_str)
         )
         new_skey = response.json().get('skey')
