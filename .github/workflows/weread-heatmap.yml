@@ -23,11 +23,13 @@ jobs:
         env:
           GIST_URL: ${{ secrets.GIST_URL }}  # 从 GitHub Secrets 中获取 Gist ID
         run: |
-          # 使用curl获取Gist内容
-          GIST_CONTENT=$(curl -s "$GIST_URL")
+          # 获取JSON文件内容
+          JSON_DATA=$(curl -s "$GIST_URL")
           
-          # 将内容设置为环境变量
-          echo "GIST_CONTENT=${toJson(GIST_CONTENT)}" >> $GITHUB_ENV
+          # 使用jq解析并导出变量
+          echo "USER_VID=$(echo $JSON_DATA | jq -r '.vid')" >> $GITHUB_ENV
+          echo "REQUEST_BODY=$(echo $JSON_DATA | jq -r '.requestBody')" >> $GITHUB_ENV
+          echo "REQUEST_HEADERS=$(echo $JSON_DATA | jq -r '.headers')" >> $GITHUB_ENV
       - name: Generate heatmap
         env:
           START_YEAR: ${{ vars.START_YEAR }}

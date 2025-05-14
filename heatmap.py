@@ -8,7 +8,6 @@ from svgwrite import Drawing
 from svgwrite.animate import Animate
 
 # 常量配置
-USER_CONTENT = os.getenv("USER_CONTENT")  # 用户信息
 TRACK_COLOR = os.getenv("TRACK_COLOR", "#EBEDF0")  # 默认颜色（无阅读时间）
 TRACK_SPECIAL1_COLOR = os.getenv("TRACK_SPECIAL1_COLOR", "#9BE9A8")  # 轻度阅读（0-30分钟）
 TRACK_SPECIAL2_COLOR = os.getenv("TRACK_SPECIAL2_COLOR", "#40C463")  # 中度阅读（30分钟-1小时）
@@ -325,14 +324,15 @@ def get_readtiming_data(vid, skey):
 def refresh_skey():
     print("尝试刷新skey...")
 
-    request_body = json.loads(USER_CONTENT).get("requestBody")  # 获取请求体
+    request_body = os.getenv("REQUEST_BODY")  # 获取请求体
+    headers = os.getenv("REQUEST_HEADERS")  # 获取请求头
 
     if not request_body:
-        raise Exception("REQUEST_BODY 环境变量未设置")
+        raise Exception("Gist变量未设置")
 
     url = "https://i.weread.qq.com/login"
     method = "POST"
-    headers = json.loads(USER_CONTENT).get("request_headers")
+    
 
     try:
         response = requests.request(
@@ -370,7 +370,7 @@ def main():
     """主函数"""
     # 获取环境变量
     # 微信用户信息配置
-    vid = json.loads(USER_CONTENT).get("vid")  # 用户唯一标识
+    vid = os.getenv("USER_VID")  # 用户唯一标识
 
     # 初始化数据
     data = None
