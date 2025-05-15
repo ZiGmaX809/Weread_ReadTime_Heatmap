@@ -20,7 +20,7 @@ https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/Quant
 ```
 2. 在Github -> Settings -> Developer Settings 
  -> Persional access tokens -> Tokens(classic)中新建一个token，其中`Select scopes`仅需选择`gist`。
-3. 在`BoxJS`中添加以下订阅，并打开其中的`微信读书登录信息监控`，填入上面申请的`GitHub Token`后保存。
+3. Quantumult X中安装`BoxJS`模块，并在`www.boxjs.com`管理页面中添加以下订阅，并打开其中的`微信读书登录信息监控`，填入上面申请的`GitHub Token`后保存。
 ```shell
 https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/boxjs.json
 ```
