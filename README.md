@@ -35,7 +35,7 @@ https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/Quant
 | GIST_URL |   https://gist.githubusercontent.com/ZiGmaX809/akjsjha....sefsfe/raw/773...121/weread_login_info.json  |  Gist文件的Raw地址   |
 
 ## 获取登录信息通知
-<img src=.https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/refs/heads/main/assets/Login_Info_Push.JPG width=50% />
+<img src=https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/refs/heads/main/assets/Login_Info_Push.JPG width=50% />
 
 ## 旧方法
 1. fork本项目；
