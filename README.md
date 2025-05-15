@@ -26,7 +26,10 @@ https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/Quant
 ```shell
 https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/boxjs.json
 ```
-4. 使用微信阅读，使用过程中，脚本会在微信阅读App请求`https://i.weread.qq.com/login`时自动获取`vid`、`request_body`、`request_headers`等信息，并将其同步至你的`Github Gists`。（因为该地址并非实时请求，而是存在一个生命周期）
+4. 使用微信阅读，直到出现Quantumult X通知。【使用过程中，脚本会在微信阅读App请求`https://i.weread.qq.com/login`时自动获取`vid`、`request_body`、`request_headers`等信息，并将其同步至你的`Github Gists`。（因为该地址并非实时请求，而是存在一个生命周期）】
+
+    <img src=https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/refs/heads/main/assets/Login_Info_Push.JPG width=50% />
+
 5. 打开`https://gist.github.com/你的GithubID`网址就能看到推送上来的`weread_login_info.json`文件，获取其Raw地址。
 5. fork本项目，并在项目`Settings->Secrets and variables->New repository secret`中添加上面的Gist文件的Raw地址。
 
@@ -34,8 +37,6 @@ https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/Quant
 | ------------ | -- | ----- |
 | GIST_URL |   https://gist.githubusercontent.com/ZiGmaX809/akjsjha....sefsfe/raw/773...121/weread_login_info.json  |  Gist文件的Raw地址   |
 
-## 获取登录信息通知
-<img src=https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/refs/heads/main/assets/Login_Info_Push.JPG width=50% />
 
 ## 旧方法
 1. fork本项目；
