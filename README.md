@@ -38,7 +38,7 @@ https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/Quant
 | GIST_URL |   https://gist.githubusercontent.com/ZiGmaX809/akjsjha....sefsfe/raw/773...121/weread_login_info.json  |  Gist文件的Raw地址   |
 
 
-## 旧方法
+## 旧方法(已被替换，不可用)
 1. fork本项目；
 2. 在手机上利用Quantumult X等工具针对微信阅读进行抓包；
 3. 找到连接为`https://i.weread.qq.com/login`的请求（可能需要关闭app后重新打开才会有或者需要等到已有skey失效后app才会进行请求）；
