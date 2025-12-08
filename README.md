@@ -1,119 +1,146 @@
-# 微信阅读阅读时长的热力图生成
+# 微信阅读热力图自动化生成工具
 
-## 展示
-<img src="https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/main/heatmap.svg">
+使用 GitHub Actions 自动获取您的微信读书数据，生成阅读时长热力图。
 
-⚠️ ~~因微信阅读相关api失效，本项目使用方式需要一定动手能力~~
+## 功能特点
 
-⚠️ 新增Quantumult X脚本，实现全流程自动化同步刷新热力图，妈妈再也不用担心我不会抓包了
+- 🔥 **完全自动化**：每天自动更新，无需手动干预
+- 🍪 **稳定认证**：使用 Cookie 认证方式，比抓包更稳定
+- 📊 **美观图表**：生成 SVG 格式的热力图，支持自定义颜色
+- ⚙️ **灵活配置**：支持自定义年份、颜色、标题等
+- 🚀 **零部署**：直接在 GitHub Actions 中运行
 
-## 说明
+## 快速开始
 
-之前阅读的热力图使用的是[Weread2NotionPro](https://github.com/malinkang/weread2notion-pro.git)项目进行生成。
+### 1. 获取微信读书 Cookie
 
-考虑到从Notion全面转向Obsidian，而且Obsidian中的Weread插件相比之下更加友好并能够使用`dataviewjs`自定义展示方式，而我也因此搞了个[obsidian-readingcard](https://github.com/ZiGmaX809/obsidian-readingcard-template.git)的模板用以展示微信阅读的各项进度。
+#### 方法一：浏览器开发者工具（推荐）
 
-## 新方法(相对比较繁琐，但是设置完一劳永逸)
-1. 手机Quantumult X中添加重写脚本
-```shell
-https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/Scripts/Get_WeRead_Infos/weread_login_monitor.conf
+1. 在 Chrome 浏览器中打开 [微信读书网页版](https://weread.qq.com)
+2. 登录您的账号
+3. 按 `F12` 打开开发者工具
+4. 切换到 **Network**（网络）标签页
+5. 刷新页面或点击任意一本书
+6. 在请求列表中找到任一发送到 `i.weread.qq.com` 的请求
+7. 点击该请求，在右侧找到 **Request Headers**
+8. 复制完整的 `Cookie` 值
+
+Cookie 格式示例：
 ```
-2. 在Github -> Settings -> Developer Settings 
- -> Persional access tokens -> Tokens(classic)中新建一个token，其中`Select scopes`仅需选择`gist`。
-3. Quantumult X中安装`BoxJS`模块，并在`www.boxjs.com`管理页面中添加以下订阅，并打开其中的`微信读书登录信息监控`，填入上面申请的`GitHub Token`后保存。
-```shell
-https://raw.githubusercontent.com/ZiGmaX809/PrivateRules/refs/heads/master/QuantumultX/boxjs.json
+wr_name=yourname; wr_vid=123456789; wr_skey=abcdef123456; wr_gid=123; wr_umid=abcdef; wr_rt=1234567890; wr_aid=xxx; wr_expires=1234567890
 ```
-4. 使用微信阅读，直到出现Quantumult X通知。【使用过程中，脚本会在微信阅读App请求`https://i.weread.qq.com/login`时自动获取`vid`、`request_body`、`request_headers`等信息，并将其同步至你的`Github Gists`。（因为该地址并非实时请求，而是存在一个生命周期）】
 
-    <img src=https://raw.githubusercontent.com/ZiGmaX809/Weread_ReadTime_Heatmap/refs/heads/main/assets/Login_Info_Push.JPG width=50% />
+#### 方法二：使用浏览器插件
 
-5. 打开`https://gist.github.com/你的GithubID`网址就能看到推送上来的`weread_login_info.json`文件，获取其Raw地址。
-5. fork本项目，并在项目`Settings->Secrets and variables->New repository secret`中添加上面的Gist文件的Raw地址。
+安装 Cookie 导出插件（如 "Get cookies.txt LOCALLY"），导出 `weread.qq.com` 域名的 Cookie。
 
-| Secrets键     | 示例值   | 备注    |
-| ------------ | -- | ----- |
-| GIST_URL |   https://gist.githubusercontent.com/ZiGmaX809/akjsjha....sefsfe/raw/773...121/weread_login_info.json  |  Gist文件的Raw地址   |
+### 2. 配置 GitHub 项目
 
+1. **Fork 本项目** 或 **克隆到您的仓库**
+2. 进入仓库的 **Settings** -> **Secrets and variables** -> **Actions**
+3. 点击 **New repository secret**，添加以下 Secret：
+   - **Name**: `WEREAD_COOKIE`
+   - **Value**: 粘贴您获取的 Cookie 字符串
 
-## 旧方法(已被替换，不可用)
-1. fork本项目；
-2. 在手机上利用Quantumult X等工具针对微信阅读进行抓包；
-3. 找到连接为`https://i.weread.qq.com/login`的请求（可能需要关闭app后重新打开才会有或者需要等到已有skey失效后app才会进行请求）；
-4. 在`Request Header`中获取vid值；
-5. 获取`Request Body`的json格式文本；
-6. 点击`Settings->Secrets and variables->New repository secret`中添加以下内容：
+### 3. 运行 GitHub Actions
 
-| Secrets键     | 值   | 备注    |
-| ------------ | -- | ----- |
-| USER_VID |   365204888  |   9位数字  |
-| USER_SKEY |  YourSkey  |   8位随机码，skey和request_body二选一，但skey仅单次有用，body数据可进行skey自动刷新  |
-| REQUEST_BODY |  { "random" : xxxxxxxxx,"deviceId" : "xxxxx"...} |  请求体json  |
+1. 进入仓库的 **Actions** 标签页
+2. 选择 "微信阅读热力图自动生成" 工作流
+3. 点击 **Run workflow** 手动触发一次
+4. 等待运行完成，热力图将自动生成并提交到仓库
 
-## 样式
-1. 在`Settings->Secrets and variables`中添加`Variables`，以下按需自行添加、修改键值，如果无所谓默认样式则无须添加。
+## 配置选项（可选）
 
-| Variables键      | （默认）值        | 备注              |
-| ---------------- | --------- | -----------------------|
-| START_YEAR       | `2024`    | 开始年份                 |
-| END_YEAR         | `2025`    | 结束年份                 |
-| NAME             | 微信阅读热力图    | 卡片标题  |
-| TEXT_COLOR       | #2D3436   |  默认文字颜色            |
-| TITLE_COLOR      | #2D3436   |  标题颜色               |
-| YEAR_TXT_COLOR   | #2D3436   |  年度阅读时间颜色         |
-| MONTH_TXT_COLOR  | #2D3436   |  月份标签颜色            |
-| TRACK_COLOR      | #EBEDF0   |  无阅读颜色              |
-| TRACK_SPECIAL1_COLOR | #9BE9A8 |  一级颜色              |
-| TRACK_SPECIAL2_COLOR | #40C463 |  二级颜色              |
-| TRACK_SPECIAL3_COLOR | #30A14E |  三级颜色              |
-| TRACK_SPECIAL4_COLOR | #216E39 |  四级颜色              |
-| DEFAULT_DOM_COLOR | #EBEDF0 | 默认格子颜色                  |
+您可以在仓库的 **Settings** -> **Secrets and variables** -> **Actions** -> **Variables** 中添加以下配置：
 
-2. 项目自动运行后会在根目录下生成`heatmap.svg`文件，直接在Obsidian中进行引用即可。
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `START_YEAR` | 2024 | 热力图开始年份 |
+| `END_YEAR` | 2025 | 热力图结束年份 |
+| `NAME` | 微信阅读热力图 | 图表标题 |
+| `TRACK_COLOR` | #EBEDF0 | 无阅读时间的颜色 |
+| `TRACK_SPECIAL1_COLOR` | #9BE9A8 | 0-30分钟颜色 |
+| `TRACK_SPECIAL2_COLOR` | #40C463 | 30-60分钟颜色 |
+| `TRACK_SPECIAL3_COLOR` | #30A14E | 1-2小时颜色 |
+| `TRACK_SPECIAL4_COLOR` | #216E39 | 2小时以上颜色 |
 
-### 配色参考
+## 文件说明
 
-自行逐个替换`TRACK_SPECIAL1_COLOR`至 `TRACK_SPECIAL4_COLOR`的值
+### 核心文件
 
-### 默认Github配色
+- `heatmap_new.py` - 主程序，生成热力图
+- `weread_auth.py` - 认证模块，处理 Cookie 认证
+- `.github/workflows/weread-heatmap-new.yml` - GitHub Actions 工作流配置
 
-| 颜色值       | 预览                               |
-|--------------|-----------------------------------|
-| `#9BE9A8` | ![9BE9A8](./assets/9BE9A8.svg) |
-| `#40C463` | ![40C463](./assets/40C463.svg) |
-| `#30A14E` | ![30A14E](./assets/30A14E.svg) |
-| `#216E39` | ![FFF7B2](./assets/216E39.svg) |
+### 输出文件
 
-### 万圣节
+- `heatmap.svg` - 生成的热力图文件（在仓库根目录）
 
-| 颜色值       | 预览                               |
-|--------------|-----------------------------------|
-| `#FFF7B2` | ![FFF7B2](./assets/FFF7B2.svg) |
-| `#FFEE4A` | ![FFEE4A](./assets/FFEE4A.svg) |
-| `#FFD700` | ![FFD700](./assets/FFD700.svg) |
-| `#FFA500` | ![B5E1FF](./assets/FFA500.svg) |
+## 工作原理
 
-### 微信读书风格
+1. GitHub Actions 每天自动触发（北京时间 8:00）
+2. 从 GitHub Secrets 读取 Cookie
+3. 使用 Cookie 访问微信读书 API 获取阅读数据
+4. 将数据处理成热力图格式
+5. 生成 SVG 文件并自动提交到仓库
 
-| 颜色值       | 预览                               |
-|--------------|-----------------------------------|
-| `#B5E1FF` | ![B5E1FF](./assets/B5E1FF.svg) |
-| `#5AB6FD` | ![5AB6FD](./assets/5AB6FD.svg) |
-| `#34A7FF` | ![34A7FF](./assets/34A7FF.svg) |
-| `#0077CC` | ![0077CC](./assets/0077CC.svg) |
+## 常见问题
 
-### 薰衣草
+### Q: Cookie 有多久有效期？
 
-| 颜色值    | 预览                           |
-| --------- | ------------------------------ |
-| `#F7D6F8` | ![F7D6F8](./assets/F7D6F8.svg) |
-| `#E5A3E6` | ![E5A3E6](./assets/E5A3E6.svg) |
-| `#CA5BCC` | ![CA5BCC](./assets/CA5BCC.svg) |
-| `#A74AA8` | ![A74AA8](./assets/A74AA8.svg) |
+A: 微信读书的 Cookie 通常有效期为 1-3 个月。如果发现 Action 失败，需要重新获取 Cookie 并更新。
 
+### Q: 如何更新 Cookie？
 
-## TIP
+A: 重复获取 Cookie 的步骤，然后在 GitHub Secrets 中更新 `WEREAD_COOKIE` 的值。
 
-本项目灵感来自于[Weread2NotionPro](https://github.com/malinkang/weread2notion-pro.git)，在此再次表示衷心感谢！
+### Q: Action 运行失败怎么办？
 
+1. 检查 Cookie 格式是否正确
+2. 确认 Cookie 未过期
+3. 查看 Action 运行日志，了解具体错误信息
+4. 尝试手动触发一次 Action
 
+### Q: 可以显示多账号的数据吗？
+
+A: 目前版本仅支持单账号。可以通过修改代码支持多账号数据合并。
+
+## 更新日志
+
+### v2.0.0（新版本）
+- ✨ 使用 Cookie 认证替代抓包方案
+- ✨ 支持从 GitHub Secrets 直接读取 Cookie
+- ✨ 完全自动化，无需 Quantumult X
+- ✨ 更稳定的认证方式
+- ✨ 简化配置流程
+
+### v1.0.0（原版本）
+- 依赖 Quantumult X 抓包
+- 使用 GitHub Gist 存储认证信息
+- 需要复杂的网络配置
+
+## 迁移指南
+
+如果您正在使用旧版本，请参考 [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) 进行迁移。
+
+## 安全提醒
+
+- Cookie 包含您的登录凭证，请勿泄露给他人
+- 使用私有仓库可以更好地保护您的数据
+- 定期更新 Cookie 以确保安全
+
+## 技术支持
+
+如果遇到问题，请：
+1. 查看最近的 Action 运行日志
+2. 确认配置是否正确
+3. 搜索已有的 Issues
+4. 创建新的 Issue 并提供详细错误信息
+
+## 许可证
+
+本项目采用 MIT 许可证，详见 [LICENSE](./LICENSE) 文件。
+
+---
+
+**享受阅读，让数据见证您的成长！** 📚✨

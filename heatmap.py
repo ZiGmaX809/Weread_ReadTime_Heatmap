@@ -6,6 +6,7 @@ import os
 import sys
 from svgwrite import Drawing
 from svgwrite.animate import Animate
+from weread_auth import WeReadAuth  # 导入新的认证模块
 
 # 常量配置
 TRACK_COLOR = os.getenv("TRACK_COLOR", "#EBEDF0")  # 默认颜色（无阅读时间）
@@ -48,272 +49,299 @@ class Range:
         return self.upper - self.lower
 
 class Offset:
-    """坐标偏移类，用于跟踪绘图位置"""
+    """位置偏移类"""
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
-    def tuple(self):
-        return (self.x, self.y)
+    def add_offset(self, offset):
+        return Offset(self.x + offset.x, self.y + offset.y)
+
+class Dimensions:
+    """尺寸类"""
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+def get_current_date():
+    """获取当前日期"""
+    return datetime.datetime.now()
+
+def get_weekday(date):
+    """获取日期对应的星期几（0-6，0表示周日）"""
+    return date.weekday() + 1 if date.weekday() < 6 else 0
+
+def get_first_sunday_of_year(year):
+    """获取指定年份的第一个周日"""
+    date = datetime.date(year, 1, 1)
+    while get_weekday(date) != 0:
+        date += datetime.timedelta(days=1)
+    return date
+
+def is_same_day(date1, date2):
+    """判断两个日期是否是同一天"""
+    return date1.year == date2.year and date1.month == date2.month and date1.day == date2.day
+
+def get_day_of_year(date):
+    """获取日期是该年的第几天"""
+    return (date - datetime.date(date.year, 1, 1)).days + 1
+
+def color_picker(reading_time):
+    """根据阅读时间选择颜色"""
+    if reading_time is None or reading_time == 0:
+        return TRACK_COLOR
+    elif reading_time < READING_THRESHOLDS["light"]:
+        return TRACK_SPECIAL1_COLOR
+    elif reading_time < READING_THRESHOLDS["medium"]:
+        return TRACK_SPECIAL2_COLOR
+    elif reading_time < READING_THRESHOLDS["heavy"]:
+        return TRACK_SPECIAL3_COLOR
+    else:
+        return TRACK_SPECIAL4_COLOR
 
 class Poster:
-    """海报类，存储绘图所需的数据和配置"""
-    def __init__(self):
-        self.tracks = None
-        self.years = []
+    """热力图海报类"""
+    def __init__(self, start_year, end_year):
+        self.start_year = start_year
+        self.end_year = end_year
+        self.reading_data = {}  # 存储阅读数据 {date: reading_time}
+
+        # 颜色配置
         self.colors = {
-            "track": TRACK_COLOR,  # 无阅读
-            "special1": TRACK_SPECIAL1_COLOR,  # 轻度阅读（0-30分钟）
-            "special2": TRACK_SPECIAL2_COLOR,  # 中度阅读（30分钟-1小时）
-            "special3": TRACK_SPECIAL3_COLOR,  # 重度阅读（1-2小时）
-            "special4": TRACK_SPECIAL4_COLOR,  # 深度阅读（2小时以上）
-            "dom": DEFAULT_DOM_COLOR,
+            "track_color": TRACK_COLOR,
+            "track_special1": TRACK_SPECIAL1_COLOR,
+            "track_special2": TRACK_SPECIAL2_COLOR,
+            "track_special3": TRACK_SPECIAL3_COLOR,
+            "track_special4": TRACK_SPECIAL4_COLOR,
+            "default_dom_color": DEFAULT_DOM_COLOR,
             "text_color": TEXT_COLOR,
             "title_color": TITLE_COLOR,
             "year_txt_color": YEAR_TXT_COLOR,
             "month_txt_color": MONTH_TXT_COLOR
         }
-        self.units = "secs"
-        self.with_animation = False
-        self.type_list = ["readtime"]
-        # 使用新的阈值配置替代原来的special_number
-        self.reading_thresholds = READING_THRESHOLDS
-        self.length_range_by_date = None
-        self.total_sum_year_dict = {}
-        # 从环境变量获取年份范围
-        self.start_year = int(os.getenv("START_YEAR", 2024))
-        self.end_year = int(os.getenv("END_YEAR", 2025))
 
-class Drawer:
-    """绘图器，负责生成SVG热力图"""
-    name = "readtime"
+        # 日期和时间
+        self.current_date = get_current_date()
+        self.dimensions = None
 
-    def __init__(self, poster):
-        self.poster = poster
-        self.year_style = f"font-size:{YEAR_FONT_SIZE}px; font-family:Arial;"
-        self.month_names_style = f"font-size:{MONTH_FONT_SIZE}px; font-family:Arial;"
-        self.summary_style = f"font-size:{SUMMARY_FONT_SIZE}px; font-family:Arial; font-style:italic;"
+        # 绘制配置
+        self.dom_box_dimensions = Dimensions(*DOM_BOX_TUPLE)
+        self.dom_box_padding = DOM_BOX_PADING
+        self.dom_box_radius = DOM_BOX_RADIUS
+        self.poster_padding = 30
 
-    def process_read_times(self, read_times):
-        """处理阅读时间数据，将时间戳转换为日期格式"""
-        tracks = {}
-        for timestamp, duration in read_times.items():
-            date = datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d')
-            tracks[date] = duration
-        return tracks
+    def load_reading_data(self, data):
+        """加载阅读数据"""
+        read_times = data.get('readTimes', [])
 
-    def get_color_by_threshold(self, duration):
-        """根据阅读时长阈值确定颜色"""
-        if duration == 0:
-            return self.poster.colors["dom"]  # 无阅读
-        elif duration < self.poster.reading_thresholds["light"]:
-            return self.poster.colors["special1"]  # 轻度阅读（0-30分钟）
-        elif duration < self.poster.reading_thresholds["medium"]:
-            return self.poster.colors["special2"]  # 中度阅读（30分钟-1小时）
-        elif duration < self.poster.reading_thresholds["heavy"]:
-            return self.poster.colors["special3"]  # 重度阅读（1-2小时）
-        else:
-            return self.poster.colors["special4"]  # 深度阅读（2小时以上）
+        for item in read_times:
+            # 解析日期，微信读书返回的日期是时间戳形式
+            date_timestamp = item.get('date')
+            if date_timestamp:
+                # 转换为日期对象
+                date_obj = datetime.datetime.fromtimestamp(date_timestamp)
+                date_str = date_obj.strftime('%Y-%m-%d')
+                read_time = item.get('readTime', 0)
+                self.reading_data[date_str] = read_time
 
-    def format_duration(self, seconds):
-        """将秒数格式化为更友好的时间格式"""
-        if seconds < 60:
-            return f"{seconds}秒"
-        elif seconds < 3600:
-            return f"{seconds // 60}分钟"
-        else:
-            hours = seconds // 3600
-            minutes = (seconds % 3600) // 60
-            if minutes == 0:
-                return f"{hours}小时"
-            else:
-                return f"{hours}小时{minutes}分钟"
+        print(f"加载了 {len(self.reading_data)} 天的阅读数据")
 
-    def gen_day_box(self, dr, rect_x, rect_y, date_title, day_tracks):
-        """生成单日格子"""
-        # 默认颜色（无阅读）
-        color = DEFAULT_DOM_COLOR
-        
-        if day_tracks:
-            # 根据阅读时长阈值确定颜色
-            color = self.get_color_by_threshold(day_tracks)
-            # 格式化阅读时长为更友好的格式
-            formatted_duration = self.format_duration(day_tracks)
-            date_title = f"{date_title} {formatted_duration}"
-            
-        rect = dr.rect(
-            (rect_x, rect_y),
-            DOM_BOX_TUPLE,
-            fill=color,
-            rx=DOM_BOX_RADIUS,
-            ry=DOM_BOX_RADIUS,
+    def generate_svg(self):
+        """生成SVG热力图"""
+        # 计算SVG尺寸
+        self.dimensions = self.calculate_svg_dimensions()
+
+        # 创建SVG绘图
+        dwg = Drawing(
+            'heatmap.svg',
+            size=(self.dimensions.width, self.dimensions.height)
         )
-        rect.set_desc(title=date_title)
-        return rect
 
-    def draw_one_calendar(self, dr, year, offset):
-        """绘制单年的日历热力图"""
-        # 存储初始Y偏移以便后面添加年度总结
-        initial_y = offset.y
-        
-        # 计算该年1月1日是星期几(0是周一，6是周日)
-        start_date_weekday, _ = calendar.monthrange(year, 1)
-        
-        # 调整weekday，使星期日为第一天(与GitHub保持一致)
-        if start_date_weekday == 6:  # 如果是周日
-            start_date_weekday = 0
-        else:
-            start_date_weekday += 1
-            
-        github_rect_first_day = datetime.date(year, 1, 1)
-        github_rect_day = github_rect_first_day + datetime.timedelta(-start_date_weekday)
+        # 设置背景
+        dwg.add(dwg.rect(
+            insert=(0, 0),
+            size=(self.dimensions.width, self.dimensions.height),
+            fill='white'
+        ))
 
-        # 计算该年总阅读时间并转换为小时单位
-        year_length = self.poster.total_sum_year_dict.get(year, 0)
-        year_hours = year_length // 3600
-        year_minutes = (year_length % 3600) // 60
-        
-        if year_minutes == 0:
-            year_duration = f"{year_hours}小时"
-        else:
-            year_duration = f"{year_hours}小时{year_minutes}分钟"
+        # 绘制标题
+        self.draw_title(dwg)
 
-        offset.y += DOM_BOX_PADING + YEAR_FONT_SIZE
-        
-        # 绘制日历格子
-        size = DOM_BOX_PADING + DOM_BOX_TUPLE[1]
-        rect_x = offset.x
-        current_month = -1  # 初始化为不存在的月份值
+        # 绘制各年份数据
+        current_y = 60
+        for year in range(self.start_year, self.end_year + 1):
+            self.draw_year_data(dwg, year, current_y)
+            # 计算下一年份的Y位置
+            weeks_in_year = 53  # 最多53周
+            year_height = 7 * (self.dom_box_dimensions.height + self.dom_box_padding) + 30 + 20
+            current_y += year_height
 
-        # 绘制月份标签位置
-        month_positions = []
-        temp_day = github_rect_day
-        for week in range(54):
-            if temp_day.month != current_month and temp_day.year == year:
-                month_positions.append((week, temp_day.month))
-                current_month = temp_day.month
-            temp_day += datetime.timedelta(7)  # 前进一周
-        
-        # 重置
-        current_month = -1
-        
-        # 绘制周格子
-        for week_index in range(54):
-            rect_x = offset.x + week_index * size
-            
-            # 检查并添加月份标签
-            for week_pos, month_num in month_positions:
-                if week_index == week_pos:
-                    month_name = MONTH_NAMES[month_num - 1]
-                    dr.add(
-                        dr.text(
-                            f"{month_name}",
-                            insert=(rect_x, offset.y),
-                            fill=self.poster.colors["month_txt_color"],
-                            style=self.month_names_style,
-                        )
-                    )
-            
-            # 绘制一周的格子
-            for day_in_week in range(7):
-                if github_rect_day.year > year:
-                    break
-                    
-                rect_y = offset.y + size * day_in_week + DOM_BOX_PADING
-                date_title = str(github_rect_day)
-                
-                # 只为当前年份的日期绘制格子
-                if github_rect_day.year == year:
-                    day_tracks = self.poster.tracks.get(date_title, 0)
-                    rect = self.gen_day_box(dr, rect_x, rect_y, date_title, day_tracks)
-                    dr.add(rect)
-                
-                github_rect_day += datetime.timedelta(1)
-        
-        # 计算最后一个格子的位置
-        last_box_y = offset.y + size * 7
-        
-        # 在日历底部添加年度总阅读时间
-        dr.add(
-            dr.text(
-                f"{year}年度总阅读时间: {year_duration}",
-                insert=(offset.x, last_box_y + 15),  # 放在最后一行格子下方
-                fill=self.poster.colors["year_txt_color"],
-                style=self.summary_style,
-            )
-        )
-                
-        # 更新Y偏移，为下一年的热力图留出空间
-        offset.y = last_box_y + 30  # 增加足够的空间放置年度总结
+        # 绘制图例
+        self.draw_legend(dwg, current_y - 30)
 
-    def draw(self, dr, offset, is_summary=False):
-        """绘制完整的热力图"""
-        if self.poster.tracks is None:
-            raise Exception("No tracks to draw")
+        # 保存SVG
+        dwg.save()
+        print(f"热力图已保存到: heatmap.svg")
 
-        # 按年份倒序绘制
-        for year in range(self.poster.start_year, self.poster.end_year + 1)[::-1]:
-            self.draw_one_calendar(dr, year, offset)
+    def calculate_svg_dimensions(self):
+        """动态计算SVG尺寸"""
+        year_count = self.end_year - self.start_year + 1
+        cell_size = self.dom_box_dimensions.width
+        padding = self.dom_box_padding
 
-    def draw_legend(self, dr, offset):
+        # 计算宽度：53周 * 格子尺寸 + 月份标签宽度 + 左右边距
+        svg_width = 53 * (cell_size + padding) + 30 + self.poster_padding * 2
+
+        # 计算高度：年份数量 * (7行格子 + 月份标签 + 年份标签 + 间距) + 标题高度 + 图例高度
+        year_height = 7 * (cell_size + padding) + 30 + 30  # 7天 + 月份标签 + 年份标签
+        svg_height = year_count * year_height + 60 + 50 + self.poster_padding * 2  # 标题 + 图例
+
+        return Dimensions(svg_width, svg_height)
+
+    def draw_title(self, dwg):
+        """绘制标题"""
+        dwg.add(dwg.text(
+            NAME,
+            insert=(self.dimensions.width // 2, 30),
+            fill=self.colors["title_color"],
+            style=f"font-size:18px; font-family:Arial; font-weight:bold; text-anchor:middle;"
+        ))
+
+    def draw_year_data(self, dwg, year, start_y):
+        """绘制指定年份的数据"""
+        # 绘制年份标签
+        dwg.add(dwg.text(
+            str(year),
+            insert=(15, start_y + 15),
+            fill=self.colors["year_txt_color"],
+            style=f"font-size:{YEAR_FONT_SIZE}px; font-family:Arial;"
+        ))
+
+        # 绘制月份标签
+        month_x = 80  # 月份标签起始X位置
+        for month_idx, month_name in enumerate(MONTH_NAMES):
+            # 计算月份标签位置（近似）
+            first_day = datetime.date(year, month_idx + 1, 1)
+            first_sunday = get_first_sunday_of_year(year)
+            week_num = (first_day - first_sunday).days // 7
+
+            dwg.add(dwg.text(
+                month_name,
+                insert=(month_x + week_num * (self.dom_box_dimensions.width + self.dom_box_padding), start_y + 15),
+                fill=self.colors["month_txt_color"],
+                style=f"font-size:{MONTH_FONT_SIZE}px; font-family:Arial;"
+            ))
+
+        # 绘制日期格子
+        current_date = datetime.date(year, 1, 1)
+        end_date = datetime.date(year, 12, 31)
+
+        # 找到第一个周日
+        first_sunday = get_first_sunday_of_year(year)
+
+        # 计算年度统计
+        total_days = 0
+        reading_days = 0
+        total_time = 0
+
+        while current_date <= end_date:
+            # 计算格子位置
+            days_diff = (current_date - first_sunday).days
+            week_num = days_diff // 7
+            day_of_week = days_diff % 7
+
+            if week_num >= 0:  # 只绘制该年内的日期
+                x = 80 + week_num * (self.dom_box_dimensions.width + self.dom_box_padding)
+                y = start_y + 30 + day_of_week * (self.dom_box_dimensions.height + self.dom_box_padding)
+
+                # 获取该天的阅读时间
+                date_str = current_date.strftime('%Y-%m-%d')
+                reading_time = self.reading_data.get(date_str, 0)
+
+                # 统计
+                total_days += 1
+                if reading_time > 0:
+                    reading_days += 1
+                    total_time += reading_time
+
+                # 绘制格子
+                color = color_picker(reading_time)
+                rect = dwg.rect(
+                    insert=(x, y),
+                    size=self.dom_box_dimensions,
+                    fill=color,
+                    rx=self.dom_box_radius,
+                    ry=self.dom_box_radius
+                )
+
+                # 添加提示信息
+                title_text = f"{date_str}: {reading_time // 60}分{reading_time % 60}秒"
+                rect.set_desc(title=title_text)
+
+                dwg.add(rect)
+
+            current_date += datetime.timedelta(days=1)
+
+        # 绘制年度总结
+        summary_y = start_y + 30 + 8 * (self.dom_box_dimensions.height + self.dom_box_padding)
+        avg_time = total_time // reading_days if reading_days > 0 else 0
+
+        summary_text = f"阅读 {reading_days} 天, 总计 {total_time // 3600}小时{total_time % 3600 // 60}分钟, 平均 {avg_time // 60}分钟/天"
+        dwg.add(dwg.text(
+            summary_text,
+            insert=(80, summary_y),
+            fill=self.colors["text_color"],
+            style=f"font-size:{SUMMARY_FONT_SIZE}px; font-family:Arial;"
+        ))
+
+    def draw_legend(self, dwg, y):
         """绘制图例"""
-        legend_title = "阅读时长图例:"
-        dr.add(
-            dr.text(
-                legend_title,
-                insert=(offset.x, offset.y),
-                fill=self.poster.colors["text_color"],
-                style=self.month_names_style,
-            )
-        )
-        
-        # 绘制图例项
-        size = DOM_BOX_TUPLE[0] + DOM_BOX_PADING
-        legend_items = [
-            {"color": self.poster.colors["dom"], "text": "无阅读"},
-            {"color": self.poster.colors["special1"], "text": f"< {self.format_duration(self.poster.reading_thresholds['light'])}"},
-            {"color": self.poster.colors["special2"], "text": f"< {self.format_duration(self.poster.reading_thresholds['medium'])}"},
-            {"color": self.poster.colors["special3"], "text": f"< {self.format_duration(self.poster.reading_thresholds['heavy'])}"},
-            {"color": self.poster.colors["special4"], "text": f">= {self.format_duration(self.poster.reading_thresholds['heavy'])}"}
-        ]
-        
-        # 计算图例布局
-        legend_x = offset.x
-        legend_y = offset.y + MONTH_FONT_SIZE + DOM_BOX_PADING
-        
-        for item in legend_items:
-            # 绘制颜色方块
-            dr.add(
-                dr.rect(
-                    (legend_x, legend_y),
-                    (DOM_BOX_TUPLE[0], DOM_BOX_TUPLE[1]),
-                    fill=item["color"],
-                    rx=DOM_BOX_RADIUS,
-                    ry=DOM_BOX_RADIUS,
-                )
-            )
-            
-            # 绘制文本说明
-            dr.add(
-                dr.text(
-                    item["text"],
-                    insert=(legend_x + DOM_BOX_TUPLE[0] + 5, legend_y + DOM_BOX_TUPLE[1] - 2),
-                    fill=self.poster.colors["text_color"],
-                    style=f"font-size:{MONTH_FONT_SIZE}px; font-family:Arial;"
-                )
-            )
-            
-            legend_x += 100  # 移动到下一个图例项位置
+        legend_x = 80
+        legend_y = y
 
-def get_readtiming_data(vid, skey):
+        # 图例标签
+        dwg.add(dwg.text(
+            "Less",
+            insert=(legend_x - 30, legend_y + 8),
+            fill=self.colors["text_color"],
+            style=f"font-size:{MONTH_FONT_SIZE}px; font-family:Arial;"
+        ))
+
+        # 绘制颜色方块
+        colors = [
+            (TRACK_COLOR, "无数据"),
+            (TRACK_SPECIAL1_COLOR, "0-30分钟"),
+            (TRACK_SPECIAL2_COLOR, "30-60分钟"),
+            (TRACK_SPECIAL3_COLOR, "1-2小时"),
+            (TRACK_SPECIAL4_COLOR, "2小时+")
+        ]
+
+        for color, label in colors:
+            dwg.add(dwg.rect(
+                insert=(legend_x, legend_y),
+                size=self.dom_box_dimensions,
+                fill=color,
+                rx=self.dom_box_radius,
+                ry=self.dom_box_radius
+            ))
+
+            legend_x += 15  # 间距
+
+        # "More" 标签
+        dwg.add(dwg.text(
+            "More",
+            insert=(legend_x, legend_y + 8),
+            fill=self.colors["text_color"],
+            style=f"font-size:{MONTH_FONT_SIZE}px; font-family:Arial;"
+        ))
+
+def get_readtiming_data(auth: WeReadAuth):
     """从微信读书API获取阅读数据"""
     url = "https://i.weread.qq.com/readdata/summary?synckey=0"
-    headers = {
-        "vid": vid,
-        "skey": skey,
-    }
+    headers = auth.get_auth_headers()
+
     response = requests.get(url, headers=headers)
-    
+
     if response.status_code == 200:
         return response.json()
     elif response.status_code == 401:
@@ -321,132 +349,52 @@ def get_readtiming_data(vid, skey):
     else:
         raise Exception(f"获取数据失败: {response.status_code}")
 
-def refresh_skey():
-    print("尝试刷新skey...")
-
-    request_body_str = os.getenv("REQUEST_BODY")
-    headers_str = os.getenv("REQUEST_HEADERS")
- 
-    # 确保环境变量存在
-    if not request_body_str or not headers_str:
-        print("错误: 环境变量GIST_URL相关未设置")
-        return False, None
-    
-    # 正确处理headers参数
-    # 1. 去掉最外层引号
-    inner_json_str = headers_str[1:-1]  # 直接截取首尾字符
-    # 2. 替换转义符
-    fixed_str = inner_json_str.replace('\\"', '"')
-    # 3. 解析为字典
-    headers_dict = json.loads(fixed_str)
-
-    try:
-        response = requests.request(
-            method="POST",
-            url="https://i.weread.qq.com/login",
-            headers=headers_dict,
-            data=json.loads(request_body_str)
-        )
-        new_skey = response.json().get('skey')
-        
-        print(f"Status Code: {response.status_code}")
-        # print(f"Response Text: {response.text[:200]}...")
-        return True, new_skey
-    
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return False, None
-
-def calculate_svg_dimensions(poster):
-    """动态计算SVG尺寸"""
-    year_count = poster.end_year - poster.start_year + 1
-    cell_size = DOM_BOX_TUPLE[0]  # 每个格子的尺寸
-    padding = DOM_BOX_PADING  # 格子间距
-    month_label_width = 30  # 月份标签宽度
-    
-    # 计算宽度：53周 * 格子尺寸
-    svg_width = 54 * (cell_size + padding)
-    # 计算高度：年份数量 * (7行格子 + 标题高度 + 年份间距 + 年度总结高度) + 图例高度
-    svg_height = year_count * (7 * (cell_size + padding) + 30 + 20) + 30  # 增加每年底部总结的高度
-    
-    return svg_width, svg_height
-
 def main():
     """主函数"""
     # 获取环境变量
-    # 微信用户信息配置
-    vid = os.getenv("USER_VID")  # 用户唯一标识
+    start_year = int(os.getenv("START_YEAR", "2024"))
+    end_year = int(os.getenv("END_YEAR", "2025"))
+    gist_url = os.getenv("GIST_URL", "")  # GIST_URL 现在是可选的
 
-    # 初始化数据
-    data = None
-    
-    # 获取阅读数据，如果失败则尝试刷新skey
-    try: 
-        success, new_skey = refresh_skey()
-        if success:
-            print("skeys刷新成功，正在获取数据...")
-            data = get_readtiming_data(vid, new_skey)
-            if data.get("errCode") == 1001:
-                print("自动刷新skeys后仍然未授权")
-        else:
-            print("skeys刷新失败，请检查Gist配置")
+    # 初始化认证器
+    auth = WeReadAuth()
+
+    # 初始化认证（优先从 GitHub Secrets 加载）
+    if not auth.init_auth(gist_url):
+        print("无法加载 Cookie，请检查 GitHub Secrets 中的 WEREAD_COOKIE")
+        print("或者确保 GIST_URL 指向包含 Cookie 的 Gist")
+        return
+
+    # 测试认证有效性
+    is_valid, info = auth.test_auth()
+    if not is_valid:
+        print("认证已失效，请更新 Cookie")
+        print(f"错误信息: {info.get('error', '未知错误')}")
+        return
+
+    # 获取阅读数据
+    try:
+        print("正在获取阅读数据...")
+        data = get_readtiming_data(auth)
+
+        if data.get("errCode") == 1001:
+            print("认证失败，请检查 cookies 是否有效")
+            return
+
+        if not data.get('readTimes'):
+            print("未获取到阅读数据")
+            return
+
+        print(f"成功获取 {len(data.get('readTimes', []))} 条阅读记录")
+
     except Exception as e:
         print(f"获取阅读数据时出错: {e}")
         return
 
-    # 如果无法获取数据，则退出
-    if data is None or not data.get('readTimes'):
-        print("无法获取阅读数据，请检查网络连接或Gist引用地址是否有效")
-        sys.exit(1)  # 使用非零退出码退出脚本
-        return
-    
-    # 初始化海报对象
-    poster = Poster()
-    drawer = Drawer(poster)
-    
-    # 处理阅读时间数据
-    tracks = drawer.process_read_times(data['readTimes'])
-    poster.tracks = tracks
-    
-    # 提取年份信息
-    dates = list(tracks.keys())
-    years = sorted(list(set([int(date.split('-')[0]) for date in dates])))
-    poster.years = [min(years), max(years)]
-    
-    # 计算数值范围和年度总和
-    durations = list(tracks.values())
-    if durations:  # 确保列表不为空
-        poster.length_range_by_date = Range(min(durations), max(durations))
-        
-        # 计算每年的总阅读时间
-        for year in years:
-            total = sum([duration for date, duration in tracks.items() if date.startswith(str(year))])
-            poster.total_sum_year_dict[year] = total
-    
-    # 计算SVG尺寸
-    svg_width, svg_height = calculate_svg_dimensions(poster)
-    
-    # 创建SVG绘图对象
-    dr = Drawing('heatmap.svg', size=(svg_width, svg_height))
-    offset = Offset(0, 30)  # 增加初始偏移，给左侧和顶部留出空间
-    
-    # 添加标题
-    dr.add(dr.text(
-        NAME,
-        insert=(offset.x, 20), 
-        fill=poster.colors["title_color"],
-        style=f"font-size:20px; font-family:Arial; font-weight:bold;"
-    ))
-    
-    # 绘制热力图
-    drawer.draw(dr, offset)
-    
-    # 计算图例位置并绘制图例
-    # legend_offset = Offset(offset.x, svg_height - 50)
-    # drawer.draw_legend(dr, legend_offset)
-    
-    dr.save()
-    print(f"热力图已生成: heatmap.svg")
+    # 创建热力图
+    poster = Poster(start_year, end_year)
+    poster.load_reading_data(data)
+    poster.generate_svg()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
