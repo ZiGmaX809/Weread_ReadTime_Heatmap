@@ -79,6 +79,11 @@ jobs:
         TRACK_SPECIAL4_COLOR: ${{ vars.TRACK_SPECIAL4_COLOR || '#216E39' }}
       run: |
         echo "🔥 开始生成微信阅读热力图..."
+
+        # 先删除旧的 heatmap.svg，确保不会使用缓存文件
+        rm -f heatmap.svg
+
+        # 运行生成脚本
         python heatmap.py
 
         # 检查是否生成了文件

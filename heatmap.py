@@ -363,14 +363,14 @@ def main():
     if not auth.init_auth(gist_url):
         print("无法加载 Cookie，请检查 GitHub Secrets 中的 WEREAD_COOKIE")
         print("或者确保 GIST_URL 指向包含 Cookie 的 Gist")
-        return
+        sys.exit(1)
 
     # 测试认证有效性
     is_valid, info = auth.test_auth()
     if not is_valid:
         print("认证已失效，请更新 Cookie")
         print(f"错误信息: {info.get('error', '未知错误')}")
-        return
+        sys.exit(1)
 
     # 获取阅读数据
     try:
@@ -379,17 +379,17 @@ def main():
 
         if data.get("errCode") == 1001:
             print("认证失败，请检查 cookies 是否有效")
-            return
+            sys.exit(1)
 
         if not data.get('readTimes'):
             print("未获取到阅读数据")
-            return
+            sys.exit(1)
 
         print(f"成功获取 {len(data.get('readTimes', []))} 条阅读记录")
 
     except Exception as e:
         print(f"获取阅读数据时出错: {e}")
-        return
+        sys.exit(1)
 
     # 创建热力图
     poster = Poster(start_year, end_year)
