@@ -181,9 +181,9 @@ class Drawer:
         # 计算月份标签出现位置
         month_positions = []
         temp_day = github_rect_day
-        for _ in range(54):
+        for week in range(54):
             if temp_day.month != current_month and temp_day.year == year:
-                month_positions.append((len(month_positions), temp_day.month))
+                month_positions.append((week, temp_day.month))
                 current_month = temp_day.month
             temp_day += datetime.timedelta(7)
 

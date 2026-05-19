@@ -4,13 +4,29 @@
 
 通过 Agent API Gateway 获取微信读书每日阅读时长，自动生成 GitHub 贡献图风格的 SVG 热力图。
 
-## 功能特点
+## 配色预览
 
-- **API Key 认证** — 使用 Bearer Token，比 Cookie 更稳定持久
-- **GitHub Actions 自动化** — 每日自动更新，无需手动干预
-- **本地 CLI** — 支持本地运行，灵活控制参数
-- **逐年日粒度数据** — 通过 `/readdata/detail` 接口获取每日阅读时长
-- **模块化设计** — 可被其他脚本、Skill/Agent 调用
+`assets/` 目录下提供了多种配色方案的预览：
+
+| 绿色系（默认） | 蓝色系 | 橙色系 | 紫色系 |
+|:---:|:---:|:---:|:---:|
+| ![green](./assets/216E39.svg) | ![blue](./assets/0077CC.svg) | ![orange](./assets/FFA500.svg) | ![purple](./assets/A74AA8.svg) |
+
+<details>
+<summary>查看全部配色方案</summary>
+
+| 颜色 | 预览 | 颜色 | 预览 |
+|------|------|------|------|
+| `#9BE9A8` | ![](./assets/9BE9A8.svg) | `#216E39` | ![](./assets/216E39.svg) |
+| `#40C463` | ![](./assets/40C463.svg) | `#30A14E` | ![](./assets/30A14E.svg) |
+| `#0077CC` | ![](./assets/0077CC.svg) | `#34A7FF` | ![](./assets/34A7FF.svg) |
+| `#5AB6FD` | ![](./assets/5AB6FD.svg) | `#B5E1FF` | ![](./assets/B5E1FF.svg) |
+| `#FFA500` | ![](./assets/FFA500.svg) | `#FFD700` | ![](./assets/FFD700.svg) |
+| `#FFEE4A` | ![](./assets/FFEE4A.svg) | `#FFF7B2` | ![](./assets/FFF7B2.svg) |
+| `#A74AA8` | ![](./assets/A74AA8.svg) | `#CA5BCC` | ![](./assets/CA5BCC.svg) |
+| `#E5A3E6` | ![](./assets/E5A3E6.svg) | `#F7D6F8` | ![](./assets/F7D6F8.svg) |
+
+</details>
 
 ## 快速开始
 
@@ -25,33 +41,22 @@
 ### 2. 本地运行
 
 ```bash
-# 安装依赖
 pip install -r requirements.txt
-
-# 生成热力图
 python heatmap.py
-
-# 指定年份范围 + 统计输出
 python heatmap.py --start 2023 --end 2025 --stats
-
-# 自定义输出 + 导出原始数据
-python heatmap.py --output reading.svg --json reading.json
 ```
 
 ### 3. GitHub Actions 配置
 
-> **⚠️ 必须设置 Secret，否则 Action 会失败。**
+> **必须设置 Secret，否则 Action 会失败。**
 
 1. Fork 或克隆本项目到你的仓库
-2. 进入仓库 **Settings** → **Secrets and variables** → **Actions**
-3. 点击 **New repository secret** 按钮
-4. 填写：
+2. 进入 **Settings → Secrets and variables → Actions**
+3. 点击 **New repository secret**，填写：
    - **Name**：`WEREAD_API_KEY`
-   - **Value**：`wrk-xxxxxxxx`（你的 API Key）
-5. 点击 **Add secret** 保存
-6. 进入 **Actions** 标签，选择工作流，点击 **Run workflow** 测试
-
-> Secret 值在日志中会显示为 `***`，不会泄露。
+   - **Value**：`wrk-xxxxxxxx`
+4. 点击 **Add secret** 保存
+5. 进入 **Actions** 标签，选择工作流，点击 **Run workflow** 测试
 
 ## 配置选项
 
@@ -65,75 +70,76 @@ python heatmap.py --output reading.svg --json reading.json
 | `--json` | 无 | 同时导出原始数据到 JSON |
 | `--stats` | false | 打印阅读统计摘要 |
 
-### 环境变量 / GitHub Variables
+### 颜色配置
+
+通过环境变量或 GitHub Variables 自定义所有颜色：
+
+#### 阅读时长格子颜色（5 级梯度）
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `WEREAD_API_KEY` | - | **必填**，API Key |
+| `TRACK_COLOR` | `#EBEDF0` | 无阅读记录的格子 |
+| `TRACK_SPECIAL1_COLOR` | `#9BE9A8` | 轻度阅读（0–30 分钟） |
+| `TRACK_SPECIAL2_COLOR` | `#40C463` | 中度阅读（30–60 分钟） |
+| `TRACK_SPECIAL3_COLOR` | `#30A14E` | 重度阅读（1–2 小时） |
+| `TRACK_SPECIAL4_COLOR` | `#216E39` | 深度阅读（2 小时以上） |
+
+#### 文字颜色
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `TITLE_COLOR` | `#24292E` | 图表标题颜色 |
+| `YEAR_TXT_COLOR` | `#24292E` | 年度总结文字颜色 |
+| `MONTH_TXT_COLOR` | `#24292E` | 月份标签颜色 |
+| `TEXT_COLOR` | `#24292E` | 通用文本颜色 |
+| `DEFAULT_DOM_COLOR` | `#EBEDF0` | 默认格子颜色 |
+
+#### 其他配置
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `NAME` | 微信阅读热力图 | 图表标题文字 |
 | `START_YEAR` | 今年 | 起始年份 |
 | `END_YEAR` | 今年 | 结束年份 |
-| `NAME` | 微信阅读热力图 | 图表标题 |
-| `TRACK_COLOR` | `#EBEDF0` | 无阅读 |
-| `TRACK_SPECIAL1_COLOR` | `#9BE9A8` | 0–30 分钟 |
-| `TRACK_SPECIAL2_COLOR` | `#40C463` | 30–60 分钟 |
-| `TRACK_SPECIAL3_COLOR` | `#30A14E` | 1–2 小时 |
-| `TRACK_SPECIAL4_COLOR` | `#216E39` | 2 小时以上 |
+
+### 配色方案示例
+
+```bash
+# 蓝色系
+TRACK_SPECIAL1_COLOR=#B5E1FF TRACK_SPECIAL2_COLOR=#5AB6FD \
+TRACK_SPECIAL3_COLOR=#34A7FF TRACK_SPECIAL4_COLOR=#0077CC \
+python heatmap.py
+
+# 橙黄系
+TRACK_SPECIAL1_COLOR=#FFF7B2 TRACK_SPECIAL2_COLOR=#FFEE4A \
+TRACK_SPECIAL3_COLOR=#FFD700 TRACK_SPECIAL4_COLOR=#FFA500 \
+python heatmap.py
+
+# 紫色系
+TRACK_SPECIAL1_COLOR=#F7D6F8 TRACK_SPECIAL2_COLOR=#E5A3E6 \
+TRACK_SPECIAL3_COLOR=#CA5BCC TRACK_SPECIAL4_COLOR=#A74AA8 \
+python heatmap.py
+```
 
 ## GitHub Actions
 
 ### 自动运行
 
-工作流每天 **UTC 0:00（北京时间 8:00）** 自动触发，生成热力图并提交到仓库。
+工作流每天 **UTC 0:00（北京时间 8:00）** 自动触发。
 
 ### 手动触发
 
 1. 进入仓库 **Actions** 标签页
-2. 左侧选择 **微信阅读热力图自动生成**
-3. 点击 **Run workflow** 下拉按钮
-4. 可选填入 `start_year` / `end_year`（留空使用默认值）
-5. 点击绿色 **Run workflow** 按钮
+2. 选择 **微信阅读热力图自动生成**
+3. 点击 **Run workflow**
+4. 可选填入 `start_year` / `end_year`，点击 **Run workflow**
 
 ### 手动触发（gh CLI）
 
 ```bash
-# 使用默认年份
 gh workflow run weread-heatmap.yml
-
-# 指定年份范围
 gh workflow run weread-heatmap.yml -f start_year=2023 -f end_year=2025
-
-# 查看最近运行状态
 gh run list --workflow=weread-heatmap.yml --limit=5
-
-# 查看某次运行的日志
-gh run view <run-id> --log
-```
-
-### 运行结果
-
-- 成功：`heatmap.svg` 自动提交到仓库根目录
-- 失败：查看运行日志，常见原因：API Key 未配置或已失效
-
-## 模块调用
-
-```python
-from weread_auth import WeReadAuth
-from heatmap import fetch_reading_data, Poster
-
-auth = WeReadAuth()
-auth.init_auth()
-
-# 获取阅读数据 → {date_str: seconds}
-daily_data = fetch_reading_data(auth, start_year=2024, end_year=2025)
-
-# 生成 SVG
-poster = Poster(start_year=2024, end_year=2025)
-poster.load_reading_data(daily_data)
-poster.generate_svg()
-
-# 查看统计
-stats = poster.get_statistics()
-print(f"阅读 {stats['reading_days']} 天, {stats['total_hours']}小时{stats['total_minutes']}分钟")
 ```
 
 ## 文件说明
@@ -141,33 +147,26 @@ print(f"阅读 {stats['reading_days']} 天, {stats['total_hours']}小时{stats['
 | 文件 | 说明 |
 |------|------|
 | `heatmap.py` | 主程序，数据获取 + SVG 生成 + CLI |
-| `weread_auth.py` | 认证模块，Agent API Gateway 调用 |
+| `weread_auth.py` | 认证模块，Agent API Gateway |
 | `.github/workflows/weread-heatmap.yml` | GitHub Actions 工作流 |
-| `weread-skills/heatmap.md` | Skill 定义，供 Harness/Agent 调用 |
-| `heatmap.svg` | 生成的热力图输出 |
+| `weread-skills/heatmap.md` | Skill 定义，供 Agent 调用 |
+| `heatmap.svg` | 生成的热力图 |
+| `assets/` | 配色预览 SVG |
 
 ## 工作原理
 
-1. 通过 Agent API Gateway（`POST /api/agent/gateway`）调用 `/readdata/detail`
-2. 逐年请求 `mode=annually`，提取 `dailyReadTimes` 获取日粒度阅读时长
-3. 将每日秒数映射到 5 级颜色，生成 GitHub 风格 SVG 热力图
+1. 通过 Agent API Gateway 逐月调用 `/readdata/detail`（`mode=monthly`）
+2. `monthly` 模式的 `readTimes` 按天分桶，获取每日阅读秒数
+3. 按阈值映射 5 级颜色，生成 GitHub 风格 SVG 热力图
 4. GitHub Actions 每日自动更新并提交到仓库
 
 ## FAQ
 
-### API Key 有过期时间吗？
+**API Key 有过期时间吗？** — 长期有效，无需定期更换。
 
-API Key 长期有效，无需像 Cookie 一样定期更换。
+**Action 失败怎么办？** — 检查 Secret 配置，查看运行日志，或本地 `python heatmap.py` 排查。
 
-### 可以显示多账号数据吗？
-
-目前仅支持单账号。如需多账号，可通过多次调用合并数据。
-
-### Action 运行失败怎么办？
-
-1. 检查 `WEREAD_API_KEY` Secret 是否正确配置
-2. 查看 Action 运行日志了解错误详情
-3. 尝试本地运行 `python heatmap.py` 排查问题
+**年份范围在哪设置？** — 删除 GitHub Variables 中的 `START_YEAR` / `END_YEAR` 即可使用当年默认值。
 
 ## 许可证
 
