@@ -15,7 +15,6 @@
 | `warm` | ![warm](./assets/FFA500.svg) | 暖阳橙 |
 | `purple` | ![purple](./assets/A74AA8.svg) | 梦幻紫 |
 | `ocean` | ![ocean](./assets/30A14E.svg) | 海洋青 |
-| `rose` | ![rose](./assets/E5256C.svg) | 玫瑰粉 |
 
 ```bash
 # 蓝色主题
