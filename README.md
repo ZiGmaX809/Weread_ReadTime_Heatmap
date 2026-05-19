@@ -71,6 +71,41 @@ python heatmap.py --output reading.svg --json reading.json
 | `TRACK_SPECIAL3_COLOR` | `#30A14E` | 1–2 小时 |
 | `TRACK_SPECIAL4_COLOR` | `#216E39` | 2 小时以上 |
 
+## GitHub Actions
+
+### 自动运行
+
+工作流每天 **UTC 0:00（北京时间 8:00）** 自动触发，生成热力图并提交到仓库。
+
+### 手动触发
+
+1. 进入仓库 **Actions** 标签页
+2. 左侧选择 **微信阅读热力图自动生成**
+3. 点击 **Run workflow** 下拉按钮
+4. 可选填入 `start_year` / `end_year`（留空使用默认值）
+5. 点击绿色 **Run workflow** 按钮
+
+### 手动触发（gh CLI）
+
+```bash
+# 使用默认年份
+gh workflow run weread-heatmap.yml
+
+# 指定年份范围
+gh workflow run weread-heatmap.yml -f start_year=2023 -f end_year=2025
+
+# 查看最近运行状态
+gh run list --workflow=weread-heatmap.yml --limit=5
+
+# 查看某次运行的日志
+gh run view <run-id> --log
+```
+
+### 运行结果
+
+- 成功：`heatmap.svg` 自动提交到仓库根目录
+- 失败：查看运行日志，常见原因：API Key 未配置或已失效
+
 ## 模块调用
 
 ```python
