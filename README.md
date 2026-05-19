@@ -1,5 +1,7 @@
 # 微信阅读热力图
 
+![heatmap](./heatmap.svg)
+
 通过 Agent API Gateway 获取微信读书每日阅读时长，自动生成 GitHub 贡献图风格的 SVG 热力图。
 
 ## 功能特点
@@ -57,7 +59,7 @@ python heatmap.py --output reading.svg --json reading.json
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--start` | 去年 | 起始年份 |
+| `--start` | 今年 | 起始年份 |
 | `--end` | 今年 | 结束年份 |
 | `--output` | `heatmap.svg` | SVG 输出路径 |
 | `--json` | 无 | 同时导出原始数据到 JSON |
@@ -68,7 +70,7 @@ python heatmap.py --output reading.svg --json reading.json
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `WEREAD_API_KEY` | - | **必填**，API Key |
-| `START_YEAR` | 去年 | 起始年份 |
+| `START_YEAR` | 今年 | 起始年份 |
 | `END_YEAR` | 今年 | 结束年份 |
 | `NAME` | 微信阅读热力图 | 图表标题 |
 | `TRACK_COLOR` | `#EBEDF0` | 无阅读 |

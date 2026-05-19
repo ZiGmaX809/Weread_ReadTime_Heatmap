@@ -126,16 +126,56 @@ def color_picker(reading_time):
 
 # ---------- 数据获取 ----------
 
+def _parse_readtimes(readtimes: dict) -> dict:
+    """将 readTimes / dailyReadTimes 的 {timestamp_str: seconds} 转为 {date_str: seconds}"""
+    result = {}
+    for ts_str, seconds in readtimes.items():
+        ts = int(ts_str)
+        date_str = datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+        result[date_str] = seconds
+    return result
+
+
+def _fetch_year_via_monthly(auth: WeReadAuth, year: int) -> dict:
+    """
+    逐月调用 /readdata/detail (mode=monthly) 获取日粒度数据。
+    monthly 模式的 readTimes 按天分桶，适合热力图使用。
+    """
+    all_daily = {}
+
+    for month in range(1, 13):
+        # baseTime 取该月 15 号，服务端归一化到该月 1 日
+        base_time = int(datetime.datetime(year, month, 15).timestamp())
+
+        try:
+            resp = auth.call_gateway(
+                "/readdata/detail", mode="monthly", baseTime=base_time
+            )
+        except Exception as e:
+            print(f"  {year}-{month:02d} 数据获取失败: {e}")
+            continue
+
+        # monthly 的 readTimes 按天分桶：{day_timestamp: seconds}
+        read_times = resp.get("readTimes", {})
+        if not read_times:
+            continue
+
+        daily = _parse_readtimes(read_times)
+        all_daily.update(daily)
+
+    return all_daily
+
+
 def fetch_reading_data(auth: WeReadAuth, start_year: int, end_year: int) -> dict:
     """
-    通过 Agent API Gateway 获取每日阅读数据。
-    逐年调用 /readdata/detail (mode=annually)，从 dailyReadTimes 提取日粒度数据。
-    返回 {date_str: reading_seconds} 字典。
+    获取每日阅读数据，返回 {date_str: reading_seconds} 字典。
+    策略：
+      1. 逐年调用 annually，优先用 dailyReadTimes（日粒度，1 次请求/年）
+      2. 若无 dailyReadTimes，回退到逐月调用 monthly（12 次请求/年）
     """
     all_daily_data = {}
 
     for year in range(start_year, end_year + 1):
-        # baseTime 取年中任一时间戳，服务端归一化到该年 1 月 1 日
         base_time = int(datetime.datetime(year, 6, 15).timestamp())
 
         try:
@@ -146,19 +186,19 @@ def fetch_reading_data(auth: WeReadAuth, start_year: int, end_year: int) -> dict
             print(f"获取 {year} 年数据失败: {e}")
             continue
 
-        # 优先使用 dailyReadTimes（日粒度），回退到 readTimes（月粒度）
-        daily_data = resp.get("dailyReadTimes") or resp.get("readTimes", {})
+        # 优先使用 dailyReadTimes（真正的日粒度）
+        daily_data = resp.get("dailyReadTimes")
 
-        if not daily_data:
-            print(f"{year} 年无阅读数据")
-            continue
-
-        for ts_str, seconds in daily_data.items():
-            ts = int(ts_str)
-            date_str = datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
-            all_daily_data[date_str] = seconds
-
-        print(f"{year} 年: 获取 {len(daily_data)} 条日级阅读记录")
+        if daily_data:
+            parsed = _parse_readtimes(daily_data)
+            all_daily_data.update(parsed)
+            print(f"{year} 年: {len(parsed)} 天 (dailyReadTimes)")
+        else:
+            # dailyReadTimes 不存在，回退到逐月调用获取日粒度数据
+            print(f"{year} 年: 无 dailyReadTimes，逐月获取...")
+            monthly_daily = _fetch_year_via_monthly(auth, year)
+            all_daily_data.update(monthly_daily)
+            print(f"{year} 年: {len(monthly_daily)} 天 (monthly 回退)")
 
     return all_daily_data
 
@@ -434,8 +474,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--start",
         type=int,
-        default=int(os.getenv("START_YEAR", datetime.datetime.now().year - 1)),
-        help="起始年份（默认: 去年）",
+        default=int(os.getenv("START_YEAR", datetime.datetime.now().year)),
+        help="起始年份（默认: 今年）",
     )
     parser.add_argument(
         "--end",

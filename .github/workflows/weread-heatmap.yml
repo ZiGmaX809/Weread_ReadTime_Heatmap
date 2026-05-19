@@ -59,8 +59,6 @@ jobs:
     - name: 生成微信阅读热力图
       env:
         WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
-        START_YEAR: ${{ github.event.inputs.start_year || vars.START_YEAR || '' }}
-        END_YEAR: ${{ github.event.inputs.end_year || vars.END_YEAR || '' }}
         NAME: ${{ vars.NAME || '微信阅读热力图' }}
         TRACK_COLOR: ${{ vars.TRACK_COLOR || '#EBEDF0' }}
         TRACK_SPECIAL1_COLOR: ${{ vars.TRACK_SPECIAL1_COLOR || '#9BE9A8' }}
@@ -72,16 +70,14 @@ jobs:
 
         rm -f heatmap.svg
 
-        # 构建命令行参数
-        ARGS=""
-        if [ -n "$START_YEAR" ]; then
-          ARGS="$ARGS --start $START_YEAR"
-        fi
-        if [ -n "$END_YEAR" ]; then
-          ARGS="$ARGS --end $END_YEAR"
-        fi
+        # 动态获取当前年份作为默认值
+        THIS_YEAR=$(date +'%Y')
+        START_YEAR="${{ github.event.inputs.start_year || vars.START_YEAR || '' }}"
+        END_YEAR="${{ github.event.inputs.end_year || vars.END_YEAR || '' }}"
+        START_YEAR=${START_YEAR:-$THIS_YEAR}
+        END_YEAR=${END_YEAR:-$THIS_YEAR}
 
-        python heatmap.py $ARGS --stats
+        python heatmap.py --start "$START_YEAR" --end "$END_YEAR" --stats
 
         if [ -f "heatmap.svg" ]; then
           echo "✅ 热力图生成成功"
