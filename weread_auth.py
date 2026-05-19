@@ -49,9 +49,24 @@ class WeReadAuth:
         """
         body = {"api_name": api_name, "skill_version": SKILL_VERSION, **params}
         headers = self.get_gateway_headers()
-        resp = requests.post(GATEWAY_URL, json=body, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
+
+        try:
+            resp = requests.post(GATEWAY_URL, json=body, headers=headers, timeout=30)
+        except requests.Timeout:
+            raise Exception("Gateway API 请求超时（30s）")
+        except requests.ConnectionError as e:
+            raise Exception(f"Gateway API 连接失败: {e}")
+
+        # 尝试解析 JSON 响应体（即使 HTTP 状态码非 2xx）
+        try:
+            data = resp.json()
+        except ValueError:
+            # 响应不是 JSON，打印原始内容以便排查
+            body_preview = resp.text[:500]
+            raise Exception(
+                f"Gateway 返回非 JSON 响应 "
+                f"(HTTP {resp.status_code}): {body_preview}"
+            )
 
         # 检查是否需要升级 skill 版本
         if "upgrade_info" in data:
@@ -60,9 +75,18 @@ class WeReadAuth:
                 f"{data['upgrade_info'].get('message', '请升级')}"
             )
 
+        # HTTP 非 2xx 时，优先用 JSON 中的错误信息
+        if not resp.ok:
+            errmsg = data.get("errmsg", data.get("message", "未知错误"))
+            errcode = data.get("errcode", resp.status_code)
+            raise Exception(
+                f"Gateway API 错误 (HTTP {resp.status_code}): "
+                f"{errmsg} (errcode={errcode})"
+            )
+
         if data.get("errcode", 0) != 0:
             raise Exception(
-                f"Gateway API 错误: {data.get('errmsg', '未知错误')} "
+                f"Gateway API 业务错误: {data.get('errmsg', '未知错误')} "
                 f"(errcode={data.get('errcode')})"
             )
 
@@ -77,9 +101,16 @@ class WeReadAuth:
         return False
 
     def test_auth(self) -> Tuple[bool, dict]:
-        """测试认证是否有效，返回 (是否成功, 用户信息)"""
+        """
+        测试认证是否有效。
+        先尝试 /_list（轻量接口），再尝试 /user/getinfo。
+        返回 (是否成功, 用户信息)
+        """
         try:
-            resp = self.call_gateway("/user/getinfo")
+            # 先用 /_list 测试连通性和认证
+            print("测试 Gateway 连通性...")
+            resp = self.call_gateway("/_list")
+            print("Gateway 连通正常")
             return True, resp
         except Exception as e:
             return False, {"error": str(e)}
@@ -93,13 +124,21 @@ def main():
         print("请设置环境变量: export WEREAD_API_KEY=<你的API Key>")
         return
 
+    # 打印部分 Key 信息用于排查（只显示前几位）
+    key_preview = auth.api_key[:8] + "***" if len(auth.api_key) > 8 else "***"
+    print(f"API Key: {key_preview}")
+
     is_valid, info = auth.test_auth()
     if is_valid:
         print("认证成功！")
-        print(f"用户信息: {json.dumps(info, ensure_ascii=False, indent=2)}")
+        # /_list 返回可能很大，只打印 keys
+        if isinstance(info, dict):
+            print(f"可用接口数: {len(info)}")
+            if "errcode" in info:
+                print(f"errcode: {info['errcode']}")
     else:
         print("认证失败")
-        print(f"错误信息: {json.dumps(info, ensure_ascii=False, indent=2)}")
+        print(f"错误信息: {info.get('error', '未知错误')}")
 
 
 if __name__ == "__main__":
