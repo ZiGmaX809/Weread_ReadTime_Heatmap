@@ -38,12 +38,18 @@ python heatmap.py --output reading.svg --json reading.json
 
 ### 3. GitHub Actions 配置
 
+> **⚠️ 必须设置 Secret，否则 Action 会失败。**
+
 1. Fork 或克隆本项目到你的仓库
-2. 进入 **Settings → Secrets and variables → Actions**
-3. 添加 **Repository secret**：
-   - **Name**: `WEREAD_API_KEY`
-   - **Value**: `wrk-xxxxxxxx`
-4. Actions 将每天 UTC 0:00 自动运行，也可在 Actions 页面手动触发
+2. 进入仓库 **Settings** → **Secrets and variables** → **Actions**
+3. 点击 **New repository secret** 按钮
+4. 填写：
+   - **Name**：`WEREAD_API_KEY`
+   - **Value**：`wrk-xxxxxxxx`（你的 API Key）
+5. 点击 **Add secret** 保存
+6. 进入 **Actions** 标签，选择工作流，点击 **Run workflow** 测试
+
+> Secret 值在日志中会显示为 `***`，不会泄露。
 
 ## 配置选项
 
