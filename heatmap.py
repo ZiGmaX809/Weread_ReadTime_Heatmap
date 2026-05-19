@@ -74,16 +74,22 @@ class Offset:
         self.x = x
         self.y = y
 
+    def __iter__(self):
+        return iter((self.x, self.y))
+
     def add_offset(self, offset):
         return Offset(self.x + offset.x, self.y + offset.y)
 
 
 class Dimensions:
-    """尺寸类"""
+    """尺寸类，可被解包为 (width, height)"""
 
     def __init__(self, width, height):
         self.width = width
         self.height = height
+
+    def __iter__(self):
+        return iter((self.width, self.height))
 
 
 # ---------- 日期工具 ----------
