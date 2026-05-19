@@ -1,19 +1,20 @@
 name: 微信阅读热力图自动生成
 
 on:
-  # 每天 UTC 0:00 自动运行（北京时间 8:00）
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 每天 UTC 0:00（北京时间 8:00）
 
-  # 支持手动触发
   workflow_dispatch:
     inputs:
-      force_update:
-        description: '强制更新（忽略缓存）'
+      start_year:
+        description: '起始年份'
         required: false
-        default: 'false'
+        default: ''
+      end_year:
+        description: '结束年份'
+        required: false
+        default: ''
 
-# 设置 GITHUB_TOKEN 的权限
 permissions:
   contents: write
 
@@ -22,16 +23,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 检出代码
     - name: 检出仓库
       uses: actions/checkout@v4
       with:
-        # 获取完整历史，以便推送
         fetch-depth: 0
-        # 使用 token 以便推送
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    # 设置 Python 环境
     - name: 设置 Python
       uses: actions/setup-python@v4
       with:
@@ -39,39 +36,32 @@ jobs:
         cache: 'pip'
         cache-dependency-path: 'requirements.txt'
 
-    # 安装依赖
     - name: 安装 Python 依赖
-      run: |
-        pip install -r requirements.txt
+      run: pip install -r requirements.txt
 
-    # 检查必要的 Secrets
     - name: 检查配置
       run: |
-        if [ -z "$WEREAD_COOKIE" ]; then
-          echo "❌ 错误: 未设置 WEREAD_COOKIE Secret"
+        if [ -z "$WEREAD_API_KEY" ]; then
+          echo "❌ 错误: 未设置 WEREAD_API_KEY Secret"
           echo ""
           echo "请按以下步骤设置："
           echo "1. 进入仓库 Settings -> Secrets and variables -> Actions"
           echo "2. 点击 'New repository secret'"
-          echo "3. 名称填写: WEREAD_COOKIE"
-          echo "4. 值填写您的微信读书 Cookie"
+          echo "3. 名称填写: WEREAD_API_KEY"
+          echo "4. 值填写您的微信读书 API Key (wrk-xxxxxxxx)"
           echo "5. 保存后重新运行此 Action"
           exit 1
         fi
-        echo "✅ WEREAD_COOKIE 已设置"
+        echo "✅ WEREAD_API_KEY 已设置"
       env:
-        WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
+        WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
 
-    # 生成热力图
     - name: 生成微信阅读热力图
       env:
-        # 从 Secrets 读取 Cookie
-        WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
-        # 从 Variables 读取配置（可选）
-        START_YEAR: ${{ vars.START_YEAR || '2024' }}
-        END_YEAR: ${{ vars.END_YEAR || '2025' }}
+        WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
+        START_YEAR: ${{ github.event.inputs.start_year || vars.START_YEAR || '' }}
+        END_YEAR: ${{ github.event.inputs.end_year || vars.END_YEAR || '' }}
         NAME: ${{ vars.NAME || '微信阅读热力图' }}
-        # 颜色配置（可选）
         TRACK_COLOR: ${{ vars.TRACK_COLOR || '#EBEDF0' }}
         TRACK_SPECIAL1_COLOR: ${{ vars.TRACK_SPECIAL1_COLOR || '#9BE9A8' }}
         TRACK_SPECIAL2_COLOR: ${{ vars.TRACK_SPECIAL2_COLOR || '#40C463' }}
@@ -80,13 +70,19 @@ jobs:
       run: |
         echo "🔥 开始生成微信阅读热力图..."
 
-        # 先删除旧的 heatmap.svg，确保不会使用缓存文件
         rm -f heatmap.svg
 
-        # 运行生成脚本
-        python heatmap.py
+        # 构建命令行参数
+        ARGS=""
+        if [ -n "$START_YEAR" ]; then
+          ARGS="$ARGS --start $START_YEAR"
+        fi
+        if [ -n "$END_YEAR" ]; then
+          ARGS="$ARGS --end $END_YEAR"
+        fi
 
-        # 检查是否生成了文件
+        python heatmap.py $ARGS --stats
+
         if [ -f "heatmap.svg" ]; then
           echo "✅ 热力图生成成功"
           ls -la heatmap.svg
@@ -95,45 +91,17 @@ jobs:
           exit 1
         fi
 
-    # 提交并推送生成的热力图
     - name: 提交并推送
       run: |
-        # 配置 Git
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        # 添加生成的文件
         git add heatmap.svg
 
-        # 检查是否有更改
         if git diff --staged --quiet; then
           echo "📊 没有新的更改，跳过提交"
         else
-          echo "📤 提交并推送更改..."
-          # 获取当前日期作为提交信息
           DATE=$(date +'%Y-%m-%d')
-          git commit -m "🔥 更新微信阅读热力图 - $DATE
-
-          🤖 Generated with GitHub Actions
-
-          - 从微信读书 API 获取最新阅读数据
-          - 生成 SVG 格式热力图
-          - 自动更新到仓库"
-
-          # 推送更改
+          git commit -m "Update heatmap [skip ci]"
           git push
-        fi
-
-    # 显示统计信息
-    - name: 显示统计
-      run: |
-        if [ -f "heatmap.svg" ]; then
-          echo "📊 热力图统计信息："
-          echo "- 文件大小: $(du -h heatmap.svg | cut -f1)"
-          echo "- 最后更新: $(date '+%Y-%m-%d %H:%M:%S')"
-
-          # 尝试提取一些统计信息（SVG 中可能包含）
-          if grep -q "阅读" heatmap.svg; then
-            echo "- 查找到阅读统计信息"
-          fi
         fi

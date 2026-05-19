@@ -1,146 +1,131 @@
-# 微信阅读热力图自动化生成工具
+# 微信阅读热力图
 
-使用 GitHub Actions 自动获取您的微信读书数据，生成阅读时长热力图。
+通过 Agent API Gateway 获取微信读书每日阅读时长，自动生成 GitHub 贡献图风格的 SVG 热力图。
 
 ## 功能特点
 
-- 🔥 **完全自动化**：每天自动更新，无需手动干预
-- 🍪 **稳定认证**：使用 Cookie 认证方式，比抓包更稳定
-- 📊 **美观图表**：生成 SVG 格式的热力图，支持自定义颜色
-- ⚙️ **灵活配置**：支持自定义年份、颜色、标题等
-- 🚀 **零部署**：直接在 GitHub Actions 中运行
+- **API Key 认证** — 使用 Bearer Token，比 Cookie 更稳定持久
+- **GitHub Actions 自动化** — 每日自动更新，无需手动干预
+- **本地 CLI** — 支持本地运行，灵活控制参数
+- **逐年日粒度数据** — 通过 `/readdata/detail` 接口获取每日阅读时长
+- **模块化设计** — 可被其他脚本、Skill/Agent 调用
 
 ## 快速开始
 
-### 1. 获取微信读书 Cookie
+### 1. 获取 API Key
 
-#### 方法一：浏览器开发者工具（推荐）
+1. 联系微信读书 Agent API 服务获取 `WEREAD_API_KEY`（格式 `wrk-xxxxxxxx`）
+2. 设置环境变量：
+   ```bash
+   export WEREAD_API_KEY=wrk-xxxxxxxx
+   ```
 
-1. 在 Chrome 浏览器中打开 [微信读书网页版](https://weread.qq.com)
-2. 登录您的账号
-3. 按 `F12` 打开开发者工具
-4. 切换到 **Network**（网络）标签页
-5. 刷新页面或点击任意一本书
-6. 在请求列表中找到任一发送到 `i.weread.qq.com` 的请求
-7. 点击该请求，在右侧找到 **Request Headers**
-8. 复制完整的 `Cookie` 值
+### 2. 本地运行
 
-Cookie 格式示例：
+```bash
+# 安装依赖
+pip install -r requirements.txt
+
+# 生成热力图
+python heatmap.py
+
+# 指定年份范围 + 统计输出
+python heatmap.py --start 2023 --end 2025 --stats
+
+# 自定义输出 + 导出原始数据
+python heatmap.py --output reading.svg --json reading.json
 ```
-wr_name=yourname; wr_vid=123456789; wr_skey=abcdef123456; wr_gid=123; wr_umid=abcdef; wr_rt=1234567890; wr_aid=xxx; wr_expires=1234567890
-```
 
-#### 方法二：使用浏览器插件
+### 3. GitHub Actions 配置
 
-安装 Cookie 导出插件（如 "Get cookies.txt LOCALLY"），导出 `weread.qq.com` 域名的 Cookie。
+1. Fork 或克隆本项目到你的仓库
+2. 进入 **Settings → Secrets and variables → Actions**
+3. 添加 **Repository secret**：
+   - **Name**: `WEREAD_API_KEY`
+   - **Value**: `wrk-xxxxxxxx`
+4. Actions 将每天 UTC 0:00 自动运行，也可在 Actions 页面手动触发
 
-### 2. 配置 GitHub 项目
+## 配置选项
 
-1. **Fork 本项目** 或 **克隆到您的仓库**
-2. 进入仓库的 **Settings** -> **Secrets and variables** -> **Actions**
-3. 点击 **New repository secret**，添加以下 Secret：
-   - **Name**: `WEREAD_COOKIE`
-   - **Value**: 粘贴您获取的 Cookie 字符串
+### CLI 参数
 
-### 3. 运行 GitHub Actions
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--start` | 去年 | 起始年份 |
+| `--end` | 今年 | 结束年份 |
+| `--output` | `heatmap.svg` | SVG 输出路径 |
+| `--json` | 无 | 同时导出原始数据到 JSON |
+| `--stats` | false | 打印阅读统计摘要 |
 
-1. 进入仓库的 **Actions** 标签页
-2. 选择 "微信阅读热力图自动生成" 工作流
-3. 点击 **Run workflow** 手动触发一次
-4. 等待运行完成，热力图将自动生成并提交到仓库
+### 环境变量 / GitHub Variables
 
-## 配置选项（可选）
-
-您可以在仓库的 **Settings** -> **Secrets and variables** -> **Actions** -> **Variables** 中添加以下配置：
-
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `START_YEAR` | 2024 | 热力图开始年份 |
-| `END_YEAR` | 2025 | 热力图结束年份 |
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `WEREAD_API_KEY` | - | **必填**，API Key |
+| `START_YEAR` | 去年 | 起始年份 |
+| `END_YEAR` | 今年 | 结束年份 |
 | `NAME` | 微信阅读热力图 | 图表标题 |
-| `TRACK_COLOR` | #EBEDF0 | 无阅读时间的颜色 |
-| `TRACK_SPECIAL1_COLOR` | #9BE9A8 | 0-30分钟颜色 |
-| `TRACK_SPECIAL2_COLOR` | #40C463 | 30-60分钟颜色 |
-| `TRACK_SPECIAL3_COLOR` | #30A14E | 1-2小时颜色 |
-| `TRACK_SPECIAL4_COLOR` | #216E39 | 2小时以上颜色 |
+| `TRACK_COLOR` | `#EBEDF0` | 无阅读 |
+| `TRACK_SPECIAL1_COLOR` | `#9BE9A8` | 0–30 分钟 |
+| `TRACK_SPECIAL2_COLOR` | `#40C463` | 30–60 分钟 |
+| `TRACK_SPECIAL3_COLOR` | `#30A14E` | 1–2 小时 |
+| `TRACK_SPECIAL4_COLOR` | `#216E39` | 2 小时以上 |
+
+## 模块调用
+
+```python
+from weread_auth import WeReadAuth
+from heatmap import fetch_reading_data, Poster
+
+auth = WeReadAuth()
+auth.init_auth()
+
+# 获取阅读数据 → {date_str: seconds}
+daily_data = fetch_reading_data(auth, start_year=2024, end_year=2025)
+
+# 生成 SVG
+poster = Poster(start_year=2024, end_year=2025)
+poster.load_reading_data(daily_data)
+poster.generate_svg()
+
+# 查看统计
+stats = poster.get_statistics()
+print(f"阅读 {stats['reading_days']} 天, {stats['total_hours']}小时{stats['total_minutes']}分钟")
+```
 
 ## 文件说明
 
-### 核心文件
-
-- `heatmap_new.py` - 主程序，生成热力图
-- `weread_auth.py` - 认证模块，处理 Cookie 认证
-- `.github/workflows/weread-heatmap-new.yml` - GitHub Actions 工作流配置
-
-### 输出文件
-
-- `heatmap.svg` - 生成的热力图文件（在仓库根目录）
+| 文件 | 说明 |
+|------|------|
+| `heatmap.py` | 主程序，数据获取 + SVG 生成 + CLI |
+| `weread_auth.py` | 认证模块，Agent API Gateway 调用 |
+| `.github/workflows/weread-heatmap.yml` | GitHub Actions 工作流 |
+| `weread-skills/heatmap.md` | Skill 定义，供 Harness/Agent 调用 |
+| `heatmap.svg` | 生成的热力图输出 |
 
 ## 工作原理
 
-1. GitHub Actions 每天自动触发（北京时间 8:00）
-2. 从 GitHub Secrets 读取 Cookie
-3. 使用 Cookie 访问微信读书 API 获取阅读数据
-4. 将数据处理成热力图格式
-5. 生成 SVG 文件并自动提交到仓库
+1. 通过 Agent API Gateway（`POST /api/agent/gateway`）调用 `/readdata/detail`
+2. 逐年请求 `mode=annually`，提取 `dailyReadTimes` 获取日粒度阅读时长
+3. 将每日秒数映射到 5 级颜色，生成 GitHub 风格 SVG 热力图
+4. GitHub Actions 每日自动更新并提交到仓库
 
-## 常见问题
+## FAQ
 
-### Q: Cookie 有多久有效期？
+### API Key 有过期时间吗？
 
-A: 微信读书的 Cookie 通常有效期为 1-3 个月。如果发现 Action 失败，需要重新获取 Cookie 并更新。
+API Key 长期有效，无需像 Cookie 一样定期更换。
 
-### Q: 如何更新 Cookie？
+### 可以显示多账号数据吗？
 
-A: 重复获取 Cookie 的步骤，然后在 GitHub Secrets 中更新 `WEREAD_COOKIE` 的值。
+目前仅支持单账号。如需多账号，可通过多次调用合并数据。
 
-### Q: Action 运行失败怎么办？
+### Action 运行失败怎么办？
 
-1. 检查 Cookie 格式是否正确
-2. 确认 Cookie 未过期
-3. 查看 Action 运行日志，了解具体错误信息
-4. 尝试手动触发一次 Action
-
-### Q: 可以显示多账号的数据吗？
-
-A: 目前版本仅支持单账号。可以通过修改代码支持多账号数据合并。
-
-## 更新日志
-
-### v2.0.0（新版本）
-- ✨ 使用 Cookie 认证替代抓包方案
-- ✨ 支持从 GitHub Secrets 直接读取 Cookie
-- ✨ 完全自动化，无需 Quantumult X
-- ✨ 更稳定的认证方式
-- ✨ 简化配置流程
-
-### v1.0.0（原版本）
-- 依赖 Quantumult X 抓包
-- 使用 GitHub Gist 存储认证信息
-- 需要复杂的网络配置
-
-## 迁移指南
-
-如果您正在使用旧版本，请参考 [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) 进行迁移。
-
-## 安全提醒
-
-- Cookie 包含您的登录凭证，请勿泄露给他人
-- 使用私有仓库可以更好地保护您的数据
-- 定期更新 Cookie 以确保安全
-
-## 技术支持
-
-如果遇到问题，请：
-1. 查看最近的 Action 运行日志
-2. 确认配置是否正确
-3. 搜索已有的 Issues
-4. 创建新的 Issue 并提供详细错误信息
+1. 检查 `WEREAD_API_KEY` Secret 是否正确配置
+2. 查看 Action 运行日志了解错误详情
+3. 尝试本地运行 `python heatmap.py` 排查问题
 
 ## 许可证
 
-本项目采用 MIT 许可证，详见 [LICENSE](./LICENSE) 文件。
-
----
-
-**享受阅读，让数据见证您的成长！** 📚✨
+MIT
