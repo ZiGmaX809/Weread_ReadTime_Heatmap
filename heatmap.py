@@ -22,18 +22,51 @@ from svgwrite import Drawing
 
 from weread_auth import WeReadAuth
 
+# ---------- 主题配色 ----------
+
+THEMES = {
+    "github": {
+        "label": "GitHub 绿",
+        "levels": ["#EBEDF0", "#9BE9A8", "#40C463", "#30A14E", "#216E39"],
+        "text": "#24292E",
+        "title": "#24292E",
+    },
+    "weread": {
+        "label": "微信读书蓝",
+        "levels": ["#E8F4F8", "#B5E1FF", "#5AB6FD", "#34A7FF", "#0077CC"],
+        "text": "#1A3A5C",
+        "title": "#0D2B45",
+    },
+    "warm": {
+        "label": "暖阳橙",
+        "levels": ["#FFF8E7", "#FFF7B2", "#FFEE4A", "#FFD700", "#FFA500"],
+        "text": "#5C3A1A",
+        "title": "#3D260D",
+    },
+    "purple": {
+        "label": "梦幻紫",
+        "levels": ["#F5F0FA", "#F7D6F8", "#E5A3E6", "#CA5BCC", "#A74AA8"],
+        "text": "#3A1A5C",
+        "title": "#2A0D45",
+    },
+    "ocean": {
+        "label": "海洋青",
+        "levels": ["#E8F8F5", "#A8E6CF", "#55B89D", "#2D8F76", "#1A6B5A"],
+        "text": "#1A3A35",
+        "title": "#0D2620",
+    },
+    "rose": {
+        "label": "玫瑰粉",
+        "levels": ["#FFF0F3", "#FFCCD5", "#FF8FA3", "#FF477E", "#E5256C"],
+        "text": "#5C1A35",
+        "title": "#3D0D23",
+    },
+}
+
+DEFAULT_THEME = "github"
+
 # ---------- 常量配置 ----------
 
-TRACK_COLOR = os.getenv("TRACK_COLOR", "#EBEDF0")
-TRACK_SPECIAL1_COLOR = os.getenv("TRACK_SPECIAL1_COLOR", "#9BE9A8")
-TRACK_SPECIAL2_COLOR = os.getenv("TRACK_SPECIAL2_COLOR", "#40C463")
-TRACK_SPECIAL3_COLOR = os.getenv("TRACK_SPECIAL3_COLOR", "#30A14E")
-TRACK_SPECIAL4_COLOR = os.getenv("TRACK_SPECIAL4_COLOR", "#216E39")
-DEFAULT_DOM_COLOR = os.getenv("DEFAULT_DOM_COLOR", "#EBEDF0")
-TEXT_COLOR = os.getenv("TEXT_COLOR", "#24292E")
-TITLE_COLOR = os.getenv("TITLE_COLOR", "#24292E")
-YEAR_TXT_COLOR = os.getenv("YEAR_TXT_COLOR", "#24292E")
-MONTH_TXT_COLOR = os.getenv("MONTH_TXT_COLOR", "#24292E")
 NAME = os.getenv("NAME", "微信阅读热力图")
 
 DOM_BOX_TUPLE = (10, 10)
@@ -52,6 +85,19 @@ READING_THRESHOLDS = {
     "medium": 3600,  # 1小时
     "heavy": 7200,   # 2小时
 }
+
+
+def load_theme(name: str) -> dict:
+    """加载主题配色，返回 {levels: [...], text: ..., title: ...}"""
+    theme = THEMES.get(name)
+    if theme:
+        return theme
+    # 尝试模糊匹配
+    matches = [k for k in THEMES if k.startswith(name.lower())]
+    if matches:
+        return THEMES[matches[0]]
+    print(f"未知主题 '{name}'，可选: {', '.join(THEMES.keys())}")
+    return THEMES[DEFAULT_THEME]
 
 
 # ---------- 辅助类 ----------
@@ -77,22 +123,23 @@ class Offset:
 class Poster:
     """海报类，存储绘图所需的数据和配置"""
 
-    def __init__(self, start_year, end_year):
+    def __init__(self, start_year, end_year, theme=None):
         self.tracks = None
         self.years = []
         self.start_year = start_year
         self.end_year = end_year
+        self.theme = theme or load_theme(os.getenv("THEME_COLOR", DEFAULT_THEME))
         self.colors = {
-            "track": TRACK_COLOR,
-            "special1": TRACK_SPECIAL1_COLOR,
-            "special2": TRACK_SPECIAL2_COLOR,
-            "special3": TRACK_SPECIAL3_COLOR,
-            "special4": TRACK_SPECIAL4_COLOR,
-            "dom": DEFAULT_DOM_COLOR,
-            "text_color": TEXT_COLOR,
-            "title_color": TITLE_COLOR,
-            "year_txt_color": YEAR_TXT_COLOR,
-            "month_txt_color": MONTH_TXT_COLOR,
+            "track": self.theme["levels"][0],
+            "special1": self.theme["levels"][1],
+            "special2": self.theme["levels"][2],
+            "special3": self.theme["levels"][3],
+            "special4": self.theme["levels"][4],
+            "dom": self.theme["levels"][0],
+            "text_color": self.theme["text"],
+            "title_color": self.theme["title"],
+            "year_txt_color": self.theme["text"],
+            "month_txt_color": self.theme["text"],
         }
         self.reading_thresholds = READING_THRESHOLDS
         self.length_range_by_date = None
@@ -350,15 +397,17 @@ def calculate_svg_dimensions(poster):
 # ---------- CLI ----------
 
 def build_parser():
+    theme_list = ", ".join(f"{k}({v['label']})" for k, v in THEMES.items())
     parser = argparse.ArgumentParser(
         description="微信阅读热力图生成工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 示例:
   python heatmap.py
-  python heatmap.py --start 2023 --end 2025
-  python heatmap.py --output reading.svg --json reading.json
-  WEREAD_API_KEY=wrk-xxx python heatmap.py
+  python heatmap.py --theme weread --start 2023 --end 2025
+  python heatmap.py --theme purple --output reading.svg --stats
+
+可用主题: {theme_list}
         """,
     )
     parser.add_argument(
@@ -372,6 +421,11 @@ def build_parser():
         type=int,
         default=int(os.getenv("END_YEAR", datetime.datetime.now().year)),
         help="结束年份（默认: 今年）",
+    )
+    parser.add_argument(
+        "--theme",
+        default=os.getenv("THEME_COLOR", DEFAULT_THEME),
+        help=f"配色主题（默认: {DEFAULT_THEME}）",
     )
     parser.add_argument(
         "--output",
@@ -423,7 +477,8 @@ def main():
     print(f"共获取 {len(raw_read_times)} 天的阅读记录")
 
     # 初始化 Poster 和 Drawer
-    poster = Poster(args.start, args.end)
+    poster = Poster(args.start, args.end, theme=load_theme(args.theme))
+    print(f"主题: {poster.theme['label']}")
     poster.output_path = args.output
     drawer = Drawer(poster)
 

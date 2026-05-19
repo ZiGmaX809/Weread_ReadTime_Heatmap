@@ -60,11 +60,7 @@ jobs:
       env:
         WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
         NAME: ${{ vars.NAME || '微信阅读热力图' }}
-        TRACK_COLOR: ${{ vars.TRACK_COLOR || '#EBEDF0' }}
-        TRACK_SPECIAL1_COLOR: ${{ vars.TRACK_SPECIAL1_COLOR || '#9BE9A8' }}
-        TRACK_SPECIAL2_COLOR: ${{ vars.TRACK_SPECIAL2_COLOR || '#40C463' }}
-        TRACK_SPECIAL3_COLOR: ${{ vars.TRACK_SPECIAL3_COLOR || '#30A14E' }}
-        TRACK_SPECIAL4_COLOR: ${{ vars.TRACK_SPECIAL4_COLOR || '#216E39' }}
+        THEME_COLOR: ${{ vars.THEME_COLOR || 'github' }}
       run: |
         echo "🔥 开始生成微信阅读热力图..."
 
@@ -77,7 +73,7 @@ jobs:
         START_YEAR=${START_YEAR:-$THIS_YEAR}
         END_YEAR=${END_YEAR:-$THIS_YEAR}
 
-        python heatmap.py --start "$START_YEAR" --end "$END_YEAR" --stats
+        python heatmap.py --start "$START_YEAR" --end "$END_YEAR" --theme "$THEME_COLOR" --stats
 
         if [ -f "heatmap.svg" ]; then
           echo "✅ 热力图生成成功"
