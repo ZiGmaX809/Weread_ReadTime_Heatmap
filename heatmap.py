@@ -187,7 +187,7 @@ class Drawer:
         return f"{hours}小时{minutes}分钟" if minutes else f"{hours}小时"
 
     def gen_day_box(self, dr, rect_x, rect_y, date_title, day_tracks):
-        color = DEFAULT_DOM_COLOR
+        color = self.poster.colors["dom"]
         if day_tracks:
             color = self.get_color_by_threshold(day_tracks)
             formatted = self.format_duration(day_tracks)
