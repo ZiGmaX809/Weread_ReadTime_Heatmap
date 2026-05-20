@@ -1,4 +1,4 @@
-# 微信阅读热力图
+# 微信读书热力图
 
 ![heatmap](./heatmap.svg)
 
